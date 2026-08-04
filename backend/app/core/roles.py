@@ -16,3 +16,7 @@ READ_ONLY = "ReadOnly"
 # maintenance requests only) that doesn't include landlord data at all.
 CAN_VIEW_LANDLORDS = (ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY)
 CAN_MANAGE_LANDLORDS = (ADMINISTRATOR, PROPERTY_MANAGER)
+
+# Properties: same permission shape as Landlords, for the same reasons.
+CAN_VIEW_PROPERTIES = (ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY)
+CAN_MANAGE_PROPERTIES = (ADMINISTRATOR, PROPERTY_MANAGER)
