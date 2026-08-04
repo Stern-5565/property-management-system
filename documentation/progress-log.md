@@ -5,7 +5,7 @@ Read this first if you're picking this project back up in a new conversation
 and decisions that aren't obvious just from reading the code, so you don't
 have to re-derive them.
 
-Last updated: 2026-08-04, after completing the React Foundation (Prompt 18) - the first piece of frontend work.
+Last updated: 2026-08-04, after completing the Reusable Frontend Components (Prompt 19).
 
 ## Where things stand
 
@@ -28,18 +28,17 @@ Last updated: 2026-08-04, after completing the React Foundation (Prompt 18) - th
 
 **332/332 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 8 maintenance notes, 5 employees/users).
 
-**Frontend: React foundation done** (`frontend/`, plain React + JavaScript + CSS, Vite, react-router-dom, axios - per the scope doc's explicit "use plain React and readable CSS", no TypeScript/Tailwind/component library). Routing, API client with silent-refresh-on-401, auth context, protected routes, login/home/unauthorized/404 pages, sidebar+header layout. See "Frontend foundation" below for the full breakdown. No business-module pages yet, deliberately (see that section).
+**Frontend: React foundation + reusable component library done** (`frontend/`, plain React + JavaScript + CSS, Vite, react-router-dom, axios - per the scope doc's explicit "use plain React and readable CSS", no TypeScript/Tailwind/component library). Routing, API client with silent-refresh-on-401, auth context, protected routes, login/home/unauthorized/404 pages, sidebar+header layout, and all 15 of Prompt 19's reusable components. See "Frontend foundation" and "Reusable component library" below for the full breakdown. No business-module pages yet, deliberately (see those sections).
 
-**Not started yet:** frontend business modules (Landlords, Properties, Tenants, Tenancies, Payments, Maintenance, Employees, Dashboard) and reusable component library; deployment.
+**Not started yet:** frontend business modules (Landlords, Properties, Tenants, Tenancies, Payments, Maintenance, Employees, Dashboard); deployment.
 
 ## Next steps, in order
 
 Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbered prompts):
 
-1. **Prompt 19: Reusable frontend components** — PageHeader, DataTable, Pagination, SearchInput, FilterPanel, StatusBadge, LoadingSpinner (already exists in `src/components/` from the foundation - extend it, don't replace it), ErrorMessage, ConfirmationDialog, FormField, SelectField, DateField, CurrencyField, EmptyState, KPI card.
-2. **Prompt 20+: one frontend module at a time** — Landlords, Properties, Tenants, Tenancies, Payments, Maintenance, Employees, each following the same repo-established "API service → page → manual test" flow (see `frontend/src/services/authService.js` as the template for a module's API service file).
-3. **Then the Dashboard frontend** (KPI cards, charts, report filters, CSV export) — replaces the placeholder `HomePage.jsx`.
-4. **Then testing/deployment** (later milestones).
+1. **Prompt 20+: one frontend module at a time** — Landlords, Properties, Tenants, Tenancies, Payments, Maintenance, Employees, each following the same repo-established "API service → page → manual test" flow (see `frontend/src/services/authService.js` as the template for a module's API service file, and `frontend/src/components/` for the DataTable/Pagination/FormField/etc. every list/form page should build on rather than reinventing).
+2. **Then the Dashboard frontend** (KPI cards, charts, report filters, CSV export) — replaces the placeholder `HomePage.jsx`, and is the first real consumer of `KpiCard`.
+3. **Then testing/deployment** (later milestones).
 
 ## Frontend foundation: how to run it, and the decisions worth knowing before touching it again
 
@@ -60,6 +59,24 @@ Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbere
 **Sidebar shows every future module already, mostly disabled:** `Sidebar.jsx`'s `NAV_ITEMS` lists all 7 business modules plus Dashboard; only Dashboard (`path: "/"`, currently the placeholder `HomePage`) is a real link today. As each module's frontend gets built, flip its `path: null` to a real route - this was a deliberate choice over omitting the links entirely, so the overall app shape is visible even before every module exists.
 
 **`ProtectedRoute` already supports role-gating (`allowedRoles` prop) even though nothing uses it yet** - no business pages exist this early to need it. Wire it up per-module as role-restricted pages get built (e.g. an Employees page would pass `allowedRoles={["Administrator", "PropertyManager"]}`, matching `CAN_VIEW_EMPLOYEES` on the backend).
+
+## Reusable component library (Prompt 19)
+
+All 15 live in `frontend/src/components/`, flat (no subfolders) to match the existing structure. Verified via the Browser tool at `/dev/components` (see below) - every component renders, and the interactive ones (SearchInput's debounce, Pagination's page change, FormField's validation error, ConfirmationDialog's open/focus/Escape-to-cancel, FilterPanel's collapse) were exercised for real, not just visually inspected.
+
+**Which modules will reuse which** (so the next session doesn't have to re-derive this):
+- **Every list page** (Landlords, Properties, Tenants, Tenancies, RentPayments, Maintenance, Employees): `PageHeader` (title + a "+ New X" action), `DataTable` + `Pagination` bound to that module's `PaginatedResponse` shape, `SearchInput` + `FilterPanel` for the search/filter query params every backend list endpoint already accepts, `StatusBadge` for whichever status/priority column it has.
+- **Every create/edit form**: `FormField` (most text fields), `SelectField` (PropertyType, TenancyStatus, PaymentMethod, Priority, Category, ...), `DateField` (StartDate/EndDate/DueDate/HireDate/...), `CurrencyField` (MonthlyRent, AmountDue, EstimatedCost/ActualCost, ...), all sharing `FieldShell`'s label/error/aria wiring internally (not itself one of the 15 - see FieldShell.jsx).
+- **Every destructive action** (deactivate, cancel): `ConfirmationDialog`.
+- **The real Dashboard page** (replacing `HomePage.jsx`): `KpiCard` for the `/api/dashboard/summary` figures.
+- **Everywhere a request is in flight or fails**: `LoadingSpinner` (already used by `ProtectedRoute` during session restore) and `ErrorMessage` - both already built into `DataTable` directly, so a list page gets loading/error handling for free just by using `DataTable`.
+- **Anywhere a list/section can legitimately be empty**: `EmptyState` (also built into `DataTable` for zero rows).
+
+**Design decisions worth knowing before extending this further:**
+- `StatusBadge` infers a color ("tone") from the status text itself via a lowercase keyword map (`TONE_BY_STATUS` in `StatusBadge.jsx`) covering every status/priority string used across all 7 backend modules - so `<StatusBadge status={payment.PaymentStatus} />` just works without the caller thinking about color. An explicit `tone` prop overrides the map for anything a specific module wants to treat differently.
+- `FieldShell` (internal, used by `FormField`/`SelectField`/`DateField`/`CurrencyField`, not itself one of Prompt 19's named components) takes its `children` as a **render prop** (`(fieldProps) => <input {...fieldProps} />`), not a plain element cloned via `cloneElement`. This was a deliberate fix mid-build: `CurrencyField` needs to wrap its `<input>` in a currency-symbol `<span>`, and `cloneElement` would have put the generated `id`/`aria-*` props on the wrong (outer) element. The render-prop form works for both the simple fields and the wrapped one.
+- `ConfirmationDialog` is intentionally not a full focus-trap implementation (no dependency added for it) - it moves focus to Cancel on open (so an accidental Enter doesn't confirm a destructive action) and closes on Escape or backdrop click, which covers the cases that matter most for a dialog this simple. Revisit if a future module's use case needs real focus trapping.
+- `/dev/components` (`ComponentShowcasePage.jsx`) is a dev-only reference page, deliberately not linked from the sidebar - it exists to satisfy Prompt 19's "demonstrate each component with one simple example" concretely (reachable and testable in a real browser), not as a permanent part of the app. Fine to delete once every module is built and exercising these components for real.
 
 ## Dashboard module: calculations, permission shape, and one SQL Server gotcha avoided
 

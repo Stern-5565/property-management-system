@@ -1,13 +1,13 @@
 /**
  * Generic loading indicator - used both as a full-page state (e.g. while
- * AuthContext restores a session) and inline within a page once real data
- * fetching exists. Kept intentionally tiny; the full reusable component
- * library (Prompt 19) can extend this with size/variant props later
- * without any consumer of this component needing to change.
+ * AuthContext restores a session) and inline within a page (e.g. inside
+ * DataTable while a list request is in flight, or a "small" one inside a
+ * submit button). `size` only changes the circle's dimensions, not the
+ * markup/behavior, so every consumer stays this one component.
  */
-export function LoadingSpinner({ label = "Loading…", fullPage = false }) {
+export function LoadingSpinner({ label = "Loading…", fullPage = false, size = "medium" }) {
   const spinner = (
-    <div className="loading-spinner" role="status" aria-live="polite">
+    <div className={`loading-spinner loading-spinner--${size}`} role="status" aria-live="polite">
       <span className="loading-spinner__circle" aria-hidden="true" />
       <span>{label}</span>
     </div>

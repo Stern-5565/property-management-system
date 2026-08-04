@@ -11,6 +11,8 @@
  *
  * Only "/" (HomePage) exists as a real business page today - see
  * documentation/progress-log.md for why (Prompt 18 is foundation only).
+ * "/dev/components" is a dev-only reference for the Prompt 19 component
+ * library, not a real app page - see ComponentShowcasePage.jsx.
  */
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -19,6 +21,7 @@ import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { MainLayout } from "./layouts/MainLayout";
 import { LoginPage } from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
+import { ComponentShowcasePage } from "./pages/ComponentShowcasePage";
 import { UnauthorizedPage } from "./pages/UnauthorizedPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
@@ -34,6 +37,8 @@ export function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
                 <Route path="/" element={<HomePage />} />
+                {/* Dev-only component library reference - see ComponentShowcasePage.jsx. Deliberately not in the sidebar. */}
+                <Route path="/dev/components" element={<ComponentShowcasePage />} />
               </Route>
             </Route>
 
