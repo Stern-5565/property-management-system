@@ -55,3 +55,16 @@ CAN_UPDATE_MAINTENANCE_WORK = (ADMINISTRATOR, PROPERTY_MANAGER, MAINTENANCE_EMPL
 # MaintenanceService then narrows what they actually see to their own
 # assigned requests - see MaintenanceService._is_restricted_to_own_work.
 CAN_ACCESS_MAINTENANCE = CAN_VIEW_MAINTENANCE + (MAINTENANCE_EMPLOYEE,)
+
+# Employees: "Manage employees" is listed under Administrator only
+# (scope doc section 4) - unlike every module above, PropertyManager does
+# NOT get a matching CAN_MANAGE tuple here. They can still VIEW employees
+# (they need to know who's available when assigning maintenance work via
+# CAN_MANAGE_MAINTENANCE), but employee administration itself - creating,
+# editing, deactivating - stays Administrator-only. ReadOnly and
+# MaintenanceEmployee get neither: employee records are exactly the
+# "employee administration" the scope doc explicitly excludes
+# MaintenanceEmployee from, and ReadOnly's documented scope ("view
+# records", "view permitted reports") is never said to extend to staff data.
+CAN_VIEW_EMPLOYEES = (ADMINISTRATOR, PROPERTY_MANAGER)
+CAN_MANAGE_EMPLOYEES = (ADMINISTRATOR,)

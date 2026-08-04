@@ -5,7 +5,7 @@ Read this first if you're picking this project back up in a new conversation
 and decisions that aren't obvious just from reading the code, so you don't
 have to re-derive them.
 
-Last updated: 2026-08-04, after completing the Maintenance module (Prompt 16).
+Last updated: 2026-08-04, after completing the Employees module.
 
 ## Where things stand
 
@@ -16,26 +16,33 @@ Last updated: 2026-08-04, after completing the Maintenance module (Prompt 16).
 - FastAPI foundation: config, logging, CORS, centralized error handling, health check
 - SQLAlchemy models for all 12 tables
 - Authentication: bcrypt hashing, JWT access/refresh tokens, login/refresh/logout/me/change-password, role-based route protection
-- Five full vertical modules (repository → service → API → tests), each following the *same* pattern:
+- Six full vertical modules (repository → service → API → tests), each following the *same* pattern:
   - **Landlords** — duplicate-email handling, safe deactivate (blocks if active properties)
   - **Properties** — landlord validation, unique reference, status changes, safe deactivate (blocks if active tenancies)
   - **Tenants** — date-of-birth validation, safe deactivate (blocks if active tenancy)
   - **Tenancies** — the complex one: Draft→activate→end/cancel lifecycle, overlap prevention (checked only at activation), automatic property status sync, audit logging
   - **RentPayments** — Pending/Partially Paid/Paid/Overdue status computed LIVE on every response (not just trusted from the stored column - see "RentPayment status" below), additive record-payment (supports multiple partial payments), cancel instead of delete, overdue/due-this-month endpoints matching SQL Reports 2/1 exactly
   - **Maintenance** — the first module where MaintenanceEmployee has real write access, not just "no access" (see "Maintenance module: permission shape" below); several independent action endpoints (assign/change-priority/change-status/notes/costs/complete/cancel) instead of one big edit; employee workload aggregation endpoint
+  - **Employees** — narrower permission shape than every other simple-CRUD module (Administrator-only management; Administrator+PropertyManager view; ReadOnly and MaintenanceEmployee get neither - see "Employees module: permission shape and the User cascade" below); safe deactivate blocks on open maintenance assignments (reuses `MaintenanceRepository.OPEN_STATUSES`); deactivation cascades to the linked `User.IsActive`, one-way only
 
-**266/266 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 8 maintenance notes, 5 employees/users).
+**299/299 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 8 maintenance notes, 5 employees/users).
 
-**Not started yet:** Employees module (full CRUD - a minimal `EmployeeRepository.get_by_id` already exists, added for Maintenance's assignment validation, but that's not the module itself); Dashboard API; all frontend work; deployment.
+**Not started yet:** Dashboard API; all frontend work; deployment.
 
 ## Next steps, in order
 
 Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbered prompts):
 
-1. **Employees module** — not a numbered prompt on its own in the doc but implied; needed before Dashboard. `app/repositories/employee_repository.py` already has `get_by_id` - extend it, don't replace it, when building this out.
-2. **Prompt 17: Dashboard API** — aggregates from all the above.
-3. **Then frontend** (Prompt 18+): React foundation, reusable components, one module at a time.
-4. **Then testing/deployment** (later milestones).
+1. **Prompt 17: Dashboard API** — aggregates from all the above (active/occupied/vacant properties, occupancy %, active tenancies, rent due/collected this month, outstanding rent, open/emergency maintenance, tenancies ending soon, recent activity, chart data). Efficient SQL, no full-record loads, handle empty DB, avoid division-by-zero.
+2. **Then frontend** (Prompt 18+): React foundation, reusable components, one module at a time.
+3. **Then testing/deployment** (later milestones).
+
+## Employees module: permission shape and the User cascade
+
+- `app/core/roles.py`: `CAN_MANAGE_EMPLOYEES` is Administrator-only (the scope doc lists "Manage employees" under Administrator only, not PropertyManager - unlike every earlier simple-CRUD module where both roles manage). `CAN_VIEW_EMPLOYEES` adds PropertyManager (they need to see who's available when assigning maintenance work) but not ReadOnly or MaintenanceEmployee - employee records are treated as the "employee administration" MaintenanceEmployee is explicitly barred from, and ReadOnly's documented scope never mentions staff data.
+- Role assignment (RoleName, listed in the scope doc's Employees "suggested fields") is deliberately NOT an Employee schema field - the actual implemented schema puts roles on Users/UserRoles (see `auth_service.py`), so it lives in a not-yet-built Users admin module, not here.
+- **Deactivating an Employee cascades to their linked `User.IsActive = False`** (if a User account exists) - `EmployeeService._deactivate_linked_user`. This is necessary for "Inactive employees cannot log in" to actually hold: login (`get_current_user`) checks `User.IsActive`, a different row than `Employee.IsActive`, so without this an inactive employee could still log in. **The cascade is one-way** - reactivating an Employee does NOT restore `User.IsActive`. Account access is treated as the more sensitive, separate Administrator capability ("Create and deactivate user accounts") that the scope doc lists apart from "Manage employees" - auto-restoring login on employee reactivation would grant access through a side door around that still-to-be-built, more deliberate control.
+- Safe-deactivate blocks on `EmployeeRepository.has_open_maintenance_assignments`, which reuses `MaintenanceRepository.OPEN_STATUSES` as the single source of truth for "open" rather than redefining that status list a second time.
 
 ## Maintenance module: permission shape (worth re-reading before touching this module again)
 
