@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app import models  # noqa: F401 - registers every mapped class before first use
 from app.api.routes.health import router as health_router
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
