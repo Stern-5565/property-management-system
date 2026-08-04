@@ -5,7 +5,7 @@ Read this first if you're picking this project back up in a new conversation
 and decisions that aren't obvious just from reading the code, so you don't
 have to re-derive them.
 
-Last updated: 2026-08-04, after completing the Rent Payment module (Prompt 15).
+Last updated: 2026-08-04, after completing the Maintenance module (Prompt 16).
 
 ## Where things stand
 
@@ -16,26 +16,38 @@ Last updated: 2026-08-04, after completing the Rent Payment module (Prompt 15).
 - FastAPI foundation: config, logging, CORS, centralized error handling, health check
 - SQLAlchemy models for all 12 tables
 - Authentication: bcrypt hashing, JWT access/refresh tokens, login/refresh/logout/me/change-password, role-based route protection
-- Four full vertical modules (repository → service → API → tests), each following the *same* pattern:
+- Five full vertical modules (repository → service → API → tests), each following the *same* pattern:
   - **Landlords** — duplicate-email handling, safe deactivate (blocks if active properties)
   - **Properties** — landlord validation, unique reference, status changes, safe deactivate (blocks if active tenancies)
   - **Tenants** — date-of-birth validation, safe deactivate (blocks if active tenancy)
   - **Tenancies** — the complex one: Draft→activate→end/cancel lifecycle, overlap prevention (checked only at activation), automatic property status sync, audit logging
   - **RentPayments** — Pending/Partially Paid/Paid/Overdue status computed LIVE on every response (not just trusted from the stored column - see "RentPayment status" below), additive record-payment (supports multiple partial payments), cancel instead of delete, overdue/due-this-month endpoints matching SQL Reports 2/1 exactly
+  - **Maintenance** — the first module where MaintenanceEmployee has real write access, not just "no access" (see "Maintenance module: permission shape" below); several independent action endpoints (assign/change-priority/change-status/notes/costs/complete/cancel) instead of one big edit; employee workload aggregation endpoint
 
-**218/218 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 5 employees/users).
+**266/266 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 8 maintenance notes, 5 employees/users).
 
-**Not started yet:** Maintenance, Employees modules; Dashboard API; all frontend work; deployment.
+**Not started yet:** Employees module (full CRUD - a minimal `EmployeeRepository.get_by_id` already exists, added for Maintenance's assignment validation, but that's not the module itself); Dashboard API; all frontend work; deployment.
 
 ## Next steps, in order
 
 Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbered prompts):
 
-1. **Prompt 16: Maintenance module** — request lifecycle, assignment, notes, cost tracking.
-2. **Employees module** — not a numbered prompt on its own in the doc but implied; needed before Dashboard.
-3. **Prompt 17: Dashboard API** — aggregates from all the above.
-4. **Then frontend** (Prompt 18+): React foundation, reusable components, one module at a time.
-5. **Then testing/deployment** (later milestones).
+1. **Employees module** — not a numbered prompt on its own in the doc but implied; needed before Dashboard. `app/repositories/employee_repository.py` already has `get_by_id` - extend it, don't replace it, when building this out.
+2. **Prompt 17: Dashboard API** — aggregates from all the above.
+3. **Then frontend** (Prompt 18+): React foundation, reusable components, one module at a time.
+4. **Then testing/deployment** (later milestones).
+
+## Maintenance module: permission shape (worth re-reading before touching this module again)
+
+Maintenance is the one module where MaintenanceEmployee has real write access (scope doc section 4), but only a narrow slice of it, and only on their own assigned requests - this needed a data-level check that no route-level role tuple alone can express:
+
+- `app/core/roles.py`: `CAN_MANAGE_MAINTENANCE` (Administrator/PropertyManager - create/edit/assign/change-priority/cancel) is separate from `CAN_UPDATE_MAINTENANCE_WORK` (adds MaintenanceEmployee - change-status/notes/costs/complete). `CAN_ACCESS_MAINTENANCE` (adds MaintenanceEmployee again) gates list/get.
+- Passing the role gate is necessary but not sufficient for MaintenanceEmployee: `MaintenanceService._assert_can_update_work` additionally checks `request.AssignedEmployeeId == actor.EmployeeId` and raises `MAINTENANCE_NOT_ASSIGNED_TO_YOU` (403) otherwise. `_is_restricted_to_own_work` does the equivalent for list/get, silently narrowing (never widening) their view to their own assignments.
+- Every demo User row has a non-null `EmployeeId` (verified from `06-seed-demo-data.sql`), so `actor.EmployeeId` is always safe to use directly for notes/assignment-comparison - no null-handling needed there.
+
+Completed/Cancelled are terminal (same one-way-door pattern as RentPayment/Tenancy) - `_assert_not_terminal` blocks edit/assign/priority/status changes once either is reached. Cost entry is the one exception: `enter_costs` still works after Completed (correcting an actual cost afterward is legitimate) and only blocks on Cancelled.
+
+`MaintenanceStatus` can never be set to "Completed" or "Cancelled" via `POST /change-status` (schema-level `ChangeableStatusValue` excludes them) - those go through `/complete` and `/cancel` instead, which enforce their own required fields. This mirrors the DB's `CK_MaintenanceRequests_CompletionRequiresDetail` constraint (Completed requires `CompletedDate` + `ResolutionNotes`) by catching the same rule earlier, with a clean 422/409 instead of a raw constraint-violation 500.
 
 ## RentPayment status: a subtlety worth knowing before touching this module again
 
@@ -65,6 +77,7 @@ Each business module gets, in this order:
 - **Never name a module-level Pydantic `Literal` type alias the same as the class field that uses it** (e.g. don't name both the alias and the field `PropertyStatus`) — breaks Python 3.14's deferred annotation evaluation with a confusing `NoneType | NoneType` error. Every schema file already uses distinct names (`ContactMethod`, `PropertyTypeValue`, `TenancyStatusValue`, etc.) — keep that convention.
 - **`RequestValidationError.errors()` can include a raw Python exception object in each error's `ctx` field** (from custom `model_validator`/`field_validator` failures) — not JSON-serializable, crashes the response. `app/core/exceptions.py`'s handler strips `ctx` before encoding.
 - **A tenancy that starts today and is ended "today" (no explicit end date) violates `EndDate > StartDate`.** `TenancyService.end_tenancy` now guards this explicitly (`TENANCY_INVALID_END_DATE`, 409) rather than letting it hit the DB constraint as a raw 500.
+- **SQL Server's `GROUP BY` (unlike MySQL) requires every selected column to be aggregated or grouped-by - it will NOT infer that grouping by a primary key determines the rest of that row's columns.** `MaintenanceRepository.list_workload` originally tried `select(Employee, func.count(...), ...).group_by(Employee.EmployeeId, Employee.FirstName, Employee.LastName, Employee.IsActive)` - selecting the whole `Employee` entity pulls in every mapped column (`Email`, `Phone`, `CreatedAt`, ...), none of which were in the `GROUP BY`, and SQL Server rejected it outright (error 8120) rather than silently guessing. Fixed by selecting only the specific columns needed instead of the whole entity - keep this in mind for any future aggregation query that's tempted to `select(SomeModel, func.count(...))`.
 
 ## Testing conventions
 

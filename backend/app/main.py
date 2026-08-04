@@ -11,6 +11,7 @@ from app import models  # noqa: F401 - registers every mapped class before first
 from app.api.routes.auth import router as auth_router
 from app.api.routes.health import router as health_router
 from app.api.routes.landlords import router as landlords_router
+from app.api.routes.maintenance_requests import router as maintenance_requests_router
 from app.api.routes.properties import router as properties_router
 from app.api.routes.rent_payments import router as rent_payments_router
 from app.api.routes.tenancies import router as tenancies_router
@@ -55,3 +56,4 @@ app.include_router(properties_router, prefix="/api")
 app.include_router(tenants_router, prefix="/api")
 app.include_router(tenancies_router, prefix="/api")
 app.include_router(rent_payments_router, prefix="/api")
+app.include_router(maintenance_requests_router, prefix="/api")

@@ -32,3 +32,26 @@ CAN_MANAGE_TENANCIES = (ADMINISTRATOR, PROPERTY_MANAGER)
 # Rent payments: same permission shape again.
 CAN_VIEW_RENT_PAYMENTS = (ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY)
 CAN_MANAGE_RENT_PAYMENTS = (ADMINISTRATOR, PROPERTY_MANAGER)
+
+# Maintenance requests: the one module MaintenanceEmployee actually has a
+# documented role in (scope doc section 4), so its shape differs from
+# every other module above.
+#
+# - CAN_VIEW_MAINTENANCE: full visibility across every request - anyone
+#   who can see the whole list/workload/history, not just their own work.
+# - CAN_MANAGE_MAINTENANCE: create/edit a request, assign an employee,
+#   change priority, cancel - all "who works on what and why" decisions,
+#   which the scope doc reserves for Administrator/PropertyManager.
+# - CAN_UPDATE_MAINTENANCE_WORK: change status, add notes, enter costs,
+#   complete - the hands-on-the-job actions. MaintenanceEmployee is
+#   included here, but MaintenanceService additionally restricts them to
+#   only the requests currently assigned to them (see
+#   MaintenanceService._assert_can_update_work) - this tuple alone is not
+#   the full permission check for that role.
+CAN_VIEW_MAINTENANCE = (ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY)
+CAN_MANAGE_MAINTENANCE = (ADMINISTRATOR, PROPERTY_MANAGER)
+CAN_UPDATE_MAINTENANCE_WORK = (ADMINISTRATOR, PROPERTY_MANAGER, MAINTENANCE_EMPLOYEE)
+# List/get only: MaintenanceEmployee passes this route-level check but
+# MaintenanceService then narrows what they actually see to their own
+# assigned requests - see MaintenanceService._is_restricted_to_own_work.
+CAN_ACCESS_MAINTENANCE = CAN_VIEW_MAINTENANCE + (MAINTENANCE_EMPLOYEE,)
