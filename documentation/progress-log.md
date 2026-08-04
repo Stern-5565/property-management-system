@@ -5,7 +5,7 @@ Read this first if you're picking this project back up in a new conversation
 and decisions that aren't obvious just from reading the code, so you don't
 have to re-derive them.
 
-Last updated: 2026-08-04, after completing the Tenancy module (Prompt 14).
+Last updated: 2026-08-04, after completing the Rent Payment module (Prompt 15).
 
 ## Where things stand
 
@@ -21,21 +21,29 @@ Last updated: 2026-08-04, after completing the Tenancy module (Prompt 14).
   - **Properties** — landlord validation, unique reference, status changes, safe deactivate (blocks if active tenancies)
   - **Tenants** — date-of-birth validation, safe deactivate (blocks if active tenancy)
   - **Tenancies** — the complex one: Draft→activate→end/cancel lifecycle, overlap prevention (checked only at activation), automatic property status sync, audit logging
+  - **RentPayments** — Pending/Partially Paid/Paid/Overdue status computed LIVE on every response (not just trusted from the stored column - see "RentPayment status" below), additive record-payment (supports multiple partial payments), cancel instead of delete, overdue/due-this-month endpoints matching SQL Reports 2/1 exactly
 
-**185/185 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 5 employees/users).
+**218/218 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 5 employees/users).
 
-**Not started yet:** Rent Payments, Maintenance, Employees modules; Dashboard API; all frontend work; deployment.
+**Not started yet:** Maintenance, Employees modules; Dashboard API; all frontend work; deployment.
 
 ## Next steps, in order
 
 Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbered prompts):
 
-1. **Prompt 15: Rent Payment module** — record full/partial payments, Pending/Partially Paid/Paid/Overdue status calculation (app-maintained, not a DB computed column — see database-design.md), overdue/due-this-month endpoints, cancellation instead of hard delete.
-2. **Prompt 16: Maintenance module** — request lifecycle, assignment, notes, cost tracking.
-3. **Employees module** — not a numbered prompt on its own in the doc but implied; needed before Dashboard.
-4. **Prompt 17: Dashboard API** — aggregates from all the above.
-5. **Then frontend** (Prompt 18+): React foundation, reusable components, one module at a time.
-6. **Then testing/deployment** (later milestones).
+1. **Prompt 16: Maintenance module** — request lifecycle, assignment, notes, cost tracking.
+2. **Employees module** — not a numbered prompt on its own in the doc but implied; needed before Dashboard.
+3. **Prompt 17: Dashboard API** — aggregates from all the above.
+4. **Then frontend** (Prompt 18+): React foundation, reusable components, one module at a time.
+5. **Then testing/deployment** (later milestones).
+
+## RentPayment status: a subtlety worth knowing before touching this module again
+
+`PaymentStatus` is deliberately recalculated LIVE for every API response (`RentPaymentService.calculate_payment_status`), not just read from the stored DB column - a Pending payment silently becomes Overdue purely by the calendar moving on, with no write ever happening to catch that transition (no scheduled sweep job exists yet, same category as Tenancy's deferred Upcoming→Active sweep).
+
+**A payment can be labeled "Partially Paid" AND still show up in `/api/rent-payments/overdue`, at the same time - this is intentional, not a bug.** The single status label prioritizes "some money was received" over "the date has passed" (matches the demo data's own design), while the overdue list uses a broader, more useful definition matching SQL Report 2 exactly: due date passed AND not fully paid, full stop, regardless of partial payment. If you're ever confused by this while extending the module, re-read `RentPaymentRepository.list_overdue`'s docstring and `test_rent_payment_repository.py::test_list_overdue_matches_report_2` before assuming it's wrong - it already tripped up the test-writing pass once (fixed by correcting the test's expected 2-row assertion to the correct, already-validated 4-row one, not by changing the code).
+
+**Decimal fields serialize as JSON strings** (e.g. `"AmountDue": "1050.00"`), not JSON numbers - true for every module, not just this one. Cast with `float(...)` before comparing in tests, the way `test_property_api.py` already does.
 
 ## The established pattern (copy this for every new module)
 
