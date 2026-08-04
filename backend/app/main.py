@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401 - registers every mapped class before first use
 from app.api.routes.auth import router as auth_router
+from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.employees import router as employees_router
 from app.api.routes.health import router as health_router
 from app.api.routes.landlords import router as landlords_router
@@ -59,3 +60,4 @@ app.include_router(tenants_router, prefix="/api")
 app.include_router(tenancies_router, prefix="/api")
 app.include_router(rent_payments_router, prefix="/api")
 app.include_router(maintenance_requests_router, prefix="/api")
+app.include_router(dashboard_router, prefix="/api")

@@ -68,3 +68,11 @@ CAN_ACCESS_MAINTENANCE = CAN_VIEW_MAINTENANCE + (MAINTENANCE_EMPLOYEE,)
 # records", "view permitted reports") is never said to extend to staff data.
 CAN_VIEW_EMPLOYEES = (ADMINISTRATOR, PROPERTY_MANAGER)
 CAN_MANAGE_EMPLOYEES = (ADMINISTRATOR,)
+
+# Dashboard: read-only aggregates, same view shape as Maintenance -
+# Administrator/PropertyManager/ReadOnly ("View the full dashboard" /
+# "View reports" / "View permitted reports" - scope doc section 4).
+# MaintenanceEmployee is excluded: the dashboard surfaces financial
+# figures (rent collected, outstanding rent) alongside operational ones,
+# and MaintenanceEmployee is explicitly barred from "financial reports".
+CAN_VIEW_DASHBOARD = (ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY)

@@ -5,7 +5,7 @@ Read this first if you're picking this project back up in a new conversation
 and decisions that aren't obvious just from reading the code, so you don't
 have to re-derive them.
 
-Last updated: 2026-08-04, after completing the Employees module.
+Last updated: 2026-08-04, after completing the Dashboard API (Prompt 17) - the backend business layer is now feature-complete per the scope doc's numbered prompts, up to the frontend.
 
 ## Where things stand
 
@@ -24,18 +24,28 @@ Last updated: 2026-08-04, after completing the Employees module.
   - **RentPayments** — Pending/Partially Paid/Paid/Overdue status computed LIVE on every response (not just trusted from the stored column - see "RentPayment status" below), additive record-payment (supports multiple partial payments), cancel instead of delete, overdue/due-this-month endpoints matching SQL Reports 2/1 exactly
   - **Maintenance** — the first module where MaintenanceEmployee has real write access, not just "no access" (see "Maintenance module: permission shape" below); several independent action endpoints (assign/change-priority/change-status/notes/costs/complete/cancel) instead of one big edit; employee workload aggregation endpoint
   - **Employees** — narrower permission shape than every other simple-CRUD module (Administrator-only management; Administrator+PropertyManager view; ReadOnly and MaintenanceEmployee get neither - see "Employees module: permission shape and the User cascade" below); safe deactivate blocks on open maintenance assignments (reuses `MaintenanceRepository.OPEN_STATUSES`); deactivation cascades to the linked `User.IsActive`, one-way only
+- **Dashboard API** — read-only, 5 endpoints (`/summary`, `/rent-summary`, `/occupancy`, `/maintenance-summary`, `/recent-activity`), no Create/Update schemas at all. See "Dashboard module" below for the calculation/permission details.
 
-**299/299 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 8 maintenance notes, 5 employees/users).
+**332/332 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 8 maintenance notes, 5 employees/users).
 
-**Not started yet:** Dashboard API; all frontend work; deployment.
+**Not started yet:** all frontend work; deployment.
 
 ## Next steps, in order
 
 Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbered prompts):
 
-1. **Prompt 17: Dashboard API** — aggregates from all the above (active/occupied/vacant properties, occupancy %, active tenancies, rent due/collected this month, outstanding rent, open/emergency maintenance, tenancies ending soon, recent activity, chart data). Efficient SQL, no full-record loads, handle empty DB, avoid division-by-zero.
-2. **Then frontend** (Prompt 18+): React foundation, reusable components, one module at a time.
-3. **Then testing/deployment** (later milestones).
+1. **Prompt 18+: Frontend** — React foundation (routing, login page, layout, sidebar/header, reusable table/form components, API client, auth context), then one module at a time (Landlords → Properties → Tenants → Tenancies → Payments → Maintenance → Employees), then the Dashboard (KPI cards, charts, report filters, CSV export).
+2. **Then testing/deployment** (later milestones).
+
+## Dashboard module: calculations, permission shape, and one SQL Server gotcha avoided
+
+- `app/core/roles.py`: `CAN_VIEW_DASHBOARD` = Administrator/PropertyManager/ReadOnly - same shape as `CAN_VIEW_MAINTENANCE`. MaintenanceEmployee is excluded because the dashboard mixes financial figures (rent collected, outstanding rent) in with operational ones, and the scope doc explicitly bars MaintenanceEmployee from "financial reports." All 5 routes share one role gate, set once on the `APIRouter(dependencies=[...])` itself in `app/api/routes/dashboard.py`, rather than repeating `dependencies=[Depends(require_roles(...))]` on every individual route.
+- **Every count/sum method in `DashboardRepository` returns a pre-aggregated number, not a list of rows** - the scope doc's "avoid loading unnecessary full records." The one exception is `recent_activity`, which is inherently a list to display; it's capped with `limit` and eager-loads `AuditLog.User.Employee` via `joinedload` to avoid an N+1 query per row.
+- **Every percentage goes through `DashboardService.safe_percentage`**, a pure function (same testability pattern as `RentPaymentService.calculate_payment_status`) that returns `0.0` for a zero denominator instead of raising - this is what "handle empty databases" / "prevent division by zero" actually means in code here, and it's unit-tested directly with `safe_percentage(0, 0)`.
+- **`OutstandingRent` is deliberately broader than SQL Report 2's "Overdue"**: it sums every non-cancelled payment's unpaid balance regardless of whether the due date has passed yet (Pending obligations not yet due still count as "money owed" for this KPI), where Report 2 requires the due date to already be in the past. Don't "fix" `DashboardRepository.outstanding_rent` to match Report 2's stricter filter - they intentionally answer different questions.
+- **Avoided repeating the SQL Server `GROUP BY` gotcha from the Maintenance module** (see that section above): every grouped dashboard query selects individual columns (`Property.PropertyStatus`, `MaintenanceRequest.MaintenanceStatus`, etc.), never a whole mapped entity.
+- **`DATENAME(MONTH, ...)`'s datepart argument must be a literal T-SQL keyword, not a bindable parameter** - trying to build the "May 2026"-style month label in SQL via `func.datename("month", ...)` doesn't compose through SQLAlchemy (the datepart would be sent as a bound string parameter, which SQL Server rejects). `DashboardRepository.monthly_rent_collection` only returns raw `(Year, Month, ...)` integers; `DashboardService.get_rent_summary` builds the human-readable label in Python with `calendar.month_name` instead.
+- Maintenance priority ordering (Emergency first, matching Report 8's `CASE` expression) is done in Python (`DashboardService._PRIORITY_RANK` + `sorted(...)`) rather than duplicated as SQL - the result set is at most ~20 rows, trivial to sort in Python and easier to unit test.
 
 ## Employees module: permission shape and the User cascade
 
