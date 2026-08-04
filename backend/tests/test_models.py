@@ -255,8 +255,12 @@ def test_user_roles_many_to_many_relationship() -> None:
 
 def test_can_query_audit_logs() -> None:
     with get_session() as db:
-        # No audit log rows are seeded yet (audit logging is implemented in
-        # a later milestone) - this just confirms the table maps and is
-        # queryable without error.
+        # No audit log rows are seeded by database/06-seed-demo-data.sql,
+        # but real ones now exist from AuditService (used by TenancyService)
+        # - this just confirms the table maps and is queryable without
+        # error, not any particular count (test suite runs accumulate rows
+        # here over time, which is expected and harmless: AuditLogs.EntityId
+        # deliberately has no FK, since one audit table covers every entity
+        # type, so nothing else depends on these rows being cleaned up).
         audit_logs = db.execute(select(AuditLog)).scalars().all()
-        assert audit_logs == []
+        assert isinstance(audit_logs, list)

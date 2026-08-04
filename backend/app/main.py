@@ -12,6 +12,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.health import router as health_router
 from app.api.routes.landlords import router as landlords_router
 from app.api.routes.properties import router as properties_router
+from app.api.routes.tenancies import router as tenancies_router
 from app.api.routes.tenants import router as tenants_router
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
@@ -51,3 +52,4 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(landlords_router, prefix="/api")
 app.include_router(properties_router, prefix="/api")
 app.include_router(tenants_router, prefix="/api")
+app.include_router(tenancies_router, prefix="/api")
