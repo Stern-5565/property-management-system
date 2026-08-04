@@ -16,9 +16,11 @@
 -- has demo data will fail with unique-constraint violations (a
 -- deliberate safety net rather than a silent duplicate-insert).
 --
--- Password hashes below are obvious placeholders, not real bcrypt
--- hashes - nobody can log in with them. Real password hashing is
--- implemented in the FastAPI auth module (Prompt 10).
+-- Password hashes below are real bcrypt hashes (generated via
+-- app/core/security.py's hash_password()) of the demo password
+-- "Password123!" - the same password for all 5 demo users, so any of
+-- them can log in for testing/demo purposes. This is fine for a demo
+-- dataset but would never be acceptable for real user accounts.
 --
 -- Run this after 05-seed-lookup-data.sql, connected to PropertyManagerDb.
 -- ============================================================
@@ -54,11 +56,11 @@ INSERT INTO Users (EmployeeId, Username, Email, PasswordHash, LastLoginAt)
 SELECT e.EmployeeId, u.Username, u.EmployeeEmail, u.PwdHash, u.LastLoginAt
 FROM Employees e
 JOIN (VALUES
-    (N'sarah.mitchell@propertymanager.example', N'sarah.mitchell', N'DEMO-HASH-NOT-A-REAL-PASSWORD-sarah',  CAST('2026-08-04T08:15:00' AS DATETIME2)),
-    (N'james.carter@propertymanager.example',   N'james.carter',   N'DEMO-HASH-NOT-A-REAL-PASSWORD-james',  CAST('2026-08-03T17:40:00' AS DATETIME2)),
-    (N'priya.patel@propertymanager.example',    N'priya.patel',    N'DEMO-HASH-NOT-A-REAL-PASSWORD-priya',  CAST('2026-08-04T09:05:00' AS DATETIME2)),
-    (N'daniel.osei@propertymanager.example',    N'daniel.osei',    N'DEMO-HASH-NOT-A-REAL-PASSWORD-daniel', CAST('2026-08-04T07:50:00' AS DATETIME2)),
-    (N'emma.wilson@propertymanager.example',    N'emma.wilson',    N'DEMO-HASH-NOT-A-REAL-PASSWORD-emma',   CAST('2026-07-30T12:00:00' AS DATETIME2))
+    (N'sarah.mitchell@propertymanager.example', N'sarah.mitchell', N'$2b$12$XkNbouDtJjWjxhcnTFPdFOKi8xF0rQAdjfzdDP0H/cFm8r4UrKz5.', CAST('2026-08-04T08:15:00' AS DATETIME2)),
+    (N'james.carter@propertymanager.example',   N'james.carter',   N'$2b$12$Iyp6d8V4mKHqHMXHZdNQpum7Xy9NKCKhRQHmUCjZ68GhJZjW1fl0q', CAST('2026-08-03T17:40:00' AS DATETIME2)),
+    (N'priya.patel@propertymanager.example',    N'priya.patel',    N'$2b$12$dmSvQRWB05glt8omivdxk.VT0uq4h.7.USkdvVPbl7ISsLCFxFurG', CAST('2026-08-04T09:05:00' AS DATETIME2)),
+    (N'daniel.osei@propertymanager.example',    N'daniel.osei',    N'$2b$12$1F/JFMaFmKi7q9h5BMHiDuQzkRkOpXnaoeXYUtqxYe/hZjUf.PLw.', CAST('2026-08-04T07:50:00' AS DATETIME2)),
+    (N'emma.wilson@propertymanager.example',    N'emma.wilson',    N'$2b$12$z8i2tLuDER4u1DoH9Ro1nuza5EC0EjrfO6AVqBd10W/zyy61/He5e', CAST('2026-07-30T12:00:00' AS DATETIME2))
 ) AS u(EmployeeEmail, Username, PwdHash, LastLoginAt) ON e.Email = u.EmployeeEmail;
 GO
 

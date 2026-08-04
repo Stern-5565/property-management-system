@@ -1,6 +1,6 @@
 # PropertyManager Backend
 
-FastAPI backend for PropertyManager. SQL Server via SQLAlchemy + pyodbc, JWT authentication (added in a later milestone), Pytest for tests.
+FastAPI backend for PropertyManager. SQL Server via SQLAlchemy + pyodbc, JWT authentication, Pytest for tests.
 
 ## Prerequisites
 
@@ -38,7 +38,46 @@ venv\Scripts\python.exe -m uvicorn app.main:app --reload
 venv\Scripts\python.exe -m pytest -v
 ```
 
-`tests/test_health.py` connects to the real local database (no mocking) - it exists specifically to prove the FastAPI -> SQLAlchemy -> pyodbc -> SQL Server chain actually works end to end.
+`tests/test_health.py` connects to the real local database (no mocking) - it exists specifically to prove the FastAPI -> SQLAlchemy -> pyodbc -> SQL Server chain actually works end to end. Most other tests do too (real database, no mocked layers); ones that write data clean up their own throwaway rows afterward so the seeded demo dataset stays exactly as seeded (see `test_landlord_service.py`'s module docstring for why this project uses explicit cleanup rather than transaction-rollback fixtures).
+
+## Authentication
+
+Demo login (works against the seeded demo data from `database/06-seed-demo-data.sql`):
+
+| Email | Role |
+|---|---|
+| sarah.mitchell@propertymanager.example | Administrator |
+| james.carter@propertymanager.example | PropertyManager |
+| priya.patel@propertymanager.example | PropertyManager |
+| daniel.osei@propertymanager.example | MaintenanceEmployee |
+| emma.wilson@propertymanager.example | ReadOnly |
+
+Password for all five: `Password123!` (demo-only - never reuse a shared password like this for real accounts).
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d "{\"Email\":\"sarah.mitchell@propertymanager.example\",\"Password\":\"Password123!\"}"
+```
+
+Returns `{"access_token": "...", "refresh_token": "...", "token_type": "bearer"}`. Use the access token on protected routes:
+
+```bash
+curl http://127.0.0.1:8000/api/landlords -H "Authorization: Bearer <access_token>"
+```
+
+In Swagger (`/docs`), click **Authorize** and paste just the access token (no `Bearer ` prefix needed there - Swagger adds it).
+
+**Hashing vs. encryption:** passwords are hashed (bcrypt), never encrypted - hashing is one-way, so even a full database leak doesn't recover anyone's actual password. See the docstring at the top of `app/core/security.py` for the full explanation, including why bcrypt specifically (not a fast hash like SHA-256) is the right tool.
+
+**Access vs. refresh tokens:** the access token (30 min default) is sent with every request; the refresh token (7 days default) is used only to get a new access token via `POST /api/auth/refresh`, so users aren't forced to log in again every 30 minutes. Full explanation in `app/core/security.py`.
+
+**Where the frontend should store these:** access token in memory (a React context/store), never `localStorage` - anything JavaScript can read, an XSS payload can read too. The refresh token ideally becomes an httpOnly cookie once the frontend exists (this backend currently returns it as a plain JSON field; wiring up cookie delivery is frontend-milestone work).
+
+**Known security limitations of this implementation** (see `app/services/auth_service.py`'s module docstring for the full reasoning):
+- Refresh tokens are stateless JWTs with no server-side revocation list - logout is a client-side token discard, not a real server-side invalidation. A production system handling anything sensitive would add a refresh-token table to make logout and "revoke this device" actually effective.
+- Failed login attempts are tracked (`Users.FailedLoginAttempts`) but not yet enforced - there's no account lockout after N failures. Called out explicitly in the project scope as a later addition ("login rate limiting later").
+- Every authenticated request queries the database (to confirm the account is still active and load current roles) rather than trusting claims embedded in the token - intentional, so a deactivated account or a role change takes effect immediately rather than only at next login/token-refresh, but worth knowing if this ever needs to scale to very high request volume.
 
 ## How the application starts
 
@@ -60,6 +99,11 @@ Every error response - whether raised deliberately, a validation failure, an HTT
 
 See `app/core/exceptions.py` and `documentation/project-scope.md` section 13.
 
-## Known limitation at this stage
+## What's built so far
 
-There are no business models, schemas, or CRUD routes yet - this is deliberately just the foundation (health check + DB connectivity + error handling + logging + CORS). Business modules are added one at a time in later milestones.
+- Foundation: health check, DB connectivity, centralized error handling, logging, CORS.
+- SQLAlchemy models for all 12 tables (7 business + Roles/Users/UserRoles/AuditLogs/MaintenanceNotes).
+- Authentication: login, JWT access/refresh tokens, current-user endpoint, change-password, role-based route protection (`app/api/dependencies/auth.py`).
+- Landlord module (repository/service/API), fully protected by role - the first complete vertical slice end to end, and the template every other module follows.
+
+Remaining business modules (Properties, Tenants, Tenancies, Rent Payments, Maintenance, Employees, Dashboard, Reports) are added one at a time in later milestones, following the same repository -> service -> API pattern established here.
