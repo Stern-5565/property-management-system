@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Unicode
+from sqlalchemy import ForeignKey, Unicode, text
 from sqlalchemy.dialects.mssql import DATETIME2
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,7 +23,9 @@ class MaintenanceNote(Base):
     MaintenanceRequestId: Mapped[int] = mapped_column(ForeignKey("MaintenanceRequests.MaintenanceRequestId"))
     EmployeeId: Mapped[int] = mapped_column(ForeignKey("Employees.EmployeeId"))
     NoteText: Mapped[str] = mapped_column(Unicode(2000))
-    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2)
+    # See landlord.py for why server_default (not a Python-side default) is
+    # required here for the database's SYSUTCDATETIME() default to apply.
+    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
 
     # Many-to-one: every note belongs to exactly one request, written by
     # one employee.

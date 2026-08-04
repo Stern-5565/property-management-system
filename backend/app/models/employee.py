@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Unicode
+from sqlalchemy import Boolean, Unicode, text
 from sqlalchemy.dialects.mssql import DATETIME2
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,8 +29,10 @@ class Employee(Base):
     Department: Mapped[str | None] = mapped_column(Unicode(100))
     HireDate: Mapped[date] = mapped_column()
     IsActive: Mapped[bool] = mapped_column(Boolean)
-    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2)
-    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2)
+    # See landlord.py for why server_default (not a Python-side default) is
+    # required here for the database's SYSUTCDATETIME() default to apply.
+    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
+    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
 
     # One employee can be recorded as having created many rent payments,
     # and assigned many maintenance requests.

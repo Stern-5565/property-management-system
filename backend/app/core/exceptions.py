@@ -52,13 +52,19 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+        # Each error dict's "ctx" field can hold the raw exception object
+        # from a custom validator (e.g. the ValueError raised in
+        # LandlordWriteBase.require_company_or_full_name) - that object
+        # isn't JSON-serializable and would crash this handler. Strip it
+        # out; the human-readable "msg" string is already present without
+        # it. (Pydantic's own ValidationError.errors() has
+        # include_context=False for this, but FastAPI's
+        # RequestValidationError.errors() - a different method - doesn't
+        # accept that kwarg, so we filter manually instead.)
+        errors = [{key: value for key, value in error.items() if key != "ctx"} for error in exc.errors()]
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content=_error_body(
-                "VALIDATION_ERROR",
-                "One or more fields failed validation.",
-                {"errors": exc.errors()},
-            ),
+            content=_error_body("VALIDATION_ERROR", "One or more fields failed validation.", {"errors": errors}),
         )
 
     @app.exception_handler(StarletteHTTPException)

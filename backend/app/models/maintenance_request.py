@@ -6,7 +6,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Numeric, Unicode
+from sqlalchemy import ForeignKey, Numeric, Unicode, text
 from sqlalchemy.dialects.mssql import DATETIME2
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -34,14 +34,16 @@ class MaintenanceRequest(Base):
     Category: Mapped[str] = mapped_column(Unicode(30))
     Priority: Mapped[str] = mapped_column(Unicode(20))
     MaintenanceStatus: Mapped[str] = mapped_column(Unicode(30))
-    ReportedDate: Mapped[date] = mapped_column()
+    ReportedDate: Mapped[date] = mapped_column(server_default=text("CAST(SYSUTCDATETIME() AS DATE)"))
     ScheduledDate: Mapped[date | None] = mapped_column()
     CompletedDate: Mapped[date | None] = mapped_column()
     EstimatedCost: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     ActualCost: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     ResolutionNotes: Mapped[str | None] = mapped_column(Unicode(2000))
-    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2)
-    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2)
+    # See landlord.py for why server_default (not a Python-side default) is
+    # required here for the database's SYSUTCDATETIME() default to apply.
+    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
+    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
 
     # Many-to-one: every request belongs to exactly one property, and is
     # optionally linked to the tenancy/tenant who reported it and the

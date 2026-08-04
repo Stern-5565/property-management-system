@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Unicode
+from sqlalchemy import Boolean, Unicode, text
 from sqlalchemy.dialects.mssql import DATETIME2
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,13 +31,17 @@ class Landlord(Base):
     Country: Mapped[str] = mapped_column(Unicode(100))
     PreferredContactMethod: Mapped[str | None] = mapped_column(Unicode(20))
     IsActive: Mapped[bool] = mapped_column(Boolean)
-    # CreatedAt/UpdatedAt have no Python-side default: the columns already
-    # have a SYSUTCDATETIME() default in the database (see
-    # database/02-create-tables.sql). Leaving the attribute unset on a new
-    # instance lets SQLAlchemy omit it from the INSERT so the DB default
-    # applies, rather than the ORM racing the database to decide "now".
-    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2)
-    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2)
+    # CreatedAt/UpdatedAt have no Python-side default. server_default tells
+    # SQLAlchemy the column already has a SYSUTCDATETIME() default in the
+    # database (see database/02-create-tables.sql) - without it, SQLAlchemy
+    # has no way to know it's safe to leave the column out of the INSERT
+    # when unset, and will send an explicit NULL instead (which the
+    # database then rejects, since the column is NOT NULL). With it,
+    # leaving the attribute unset on a new instance correctly omits the
+    # column so the database default fires, rather than the ORM racing the
+    # database to decide "now".
+    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
+    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
 
     # One landlord has many properties. No delete cascade: a landlord with
     # active properties must not be deletable at all (enforced in the

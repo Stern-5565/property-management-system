@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Unicode
+from sqlalchemy import Boolean, ForeignKey, Integer, Unicode, text
 from sqlalchemy.dialects.mssql import DATETIME2
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,8 +31,10 @@ class User(Base):
     IsActive: Mapped[bool] = mapped_column(Boolean)
     LastLoginAt: Mapped[datetime | None] = mapped_column(DATETIME2)
     FailedLoginAttempts: Mapped[int] = mapped_column(Integer)
-    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2)
-    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2)
+    # See landlord.py for why server_default (not a Python-side default) is
+    # required here for the database's SYSUTCDATETIME() default to apply.
+    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
+    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
 
     # One-to-one: exactly one user account per employee (enforced by the
     # UNIQUE constraint on Users.EmployeeId).

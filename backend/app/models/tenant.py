@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, Unicode
+from sqlalchemy import Boolean, Unicode, text
 from sqlalchemy.dialects.mssql import DATETIME2
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -35,8 +35,10 @@ class Tenant(Base):
     EmploymentStatus: Mapped[str | None] = mapped_column(Unicode(30))
     Notes: Mapped[str | None] = mapped_column(Unicode(1000))
     IsActive: Mapped[bool] = mapped_column(Boolean)
-    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2)
-    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2)
+    # See landlord.py for why server_default (not a Python-side default) is
+    # required here for the database's SYSUTCDATETIME() default to apply.
+    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
+    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
 
     # One tenant has many tenancies over time. No delete cascade - a tenant
     # with an active tenancy must not be deletable at all.

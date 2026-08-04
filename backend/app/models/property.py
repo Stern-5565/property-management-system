@@ -6,7 +6,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, Unicode
+from sqlalchemy import Boolean, ForeignKey, Numeric, Unicode, text
 from sqlalchemy.dialects.mssql import DATETIME2, TINYINT
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -38,8 +38,12 @@ class Property(Base):
     DateAcquired: Mapped[date | None] = mapped_column()
     Notes: Mapped[str | None] = mapped_column(Unicode(1000))
     IsActive: Mapped[bool] = mapped_column(Boolean)
-    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2)
-    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2)
+    # server_default (not a Python-side default) tells SQLAlchemy these
+    # columns already default to SYSUTCDATETIME() in the database, so it
+    # can safely omit them from the INSERT when unset - see landlord.py
+    # for the full explanation of why this matters.
+    CreatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
+    UpdatedAt: Mapped[datetime] = mapped_column(DATETIME2, server_default=text("SYSUTCDATETIME()"))
 
     # Many-to-one: every property belongs to exactly one landlord.
     Landlord: Mapped["Landlord"] = relationship(back_populates="Properties")
