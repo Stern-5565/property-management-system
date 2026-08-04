@@ -1,0 +1,48 @@
+/**
+ * Navigation shell. Only "Dashboard" is a real, clickable route right now
+ * - every other module is listed (so the overall app shape is visible)
+ * but rendered disabled, since Prompt 18 explicitly says not to build the
+ * business pages yet. As each module gets its own frontend built, flip
+ * its entry here from `path: null` to a real path.
+ */
+import { NavLink } from "react-router-dom";
+
+const NAV_ITEMS = [
+  { label: "Dashboard", path: "/" },
+  { label: "Landlords", path: null },
+  { label: "Properties", path: null },
+  { label: "Tenants", path: null },
+  { label: "Tenancies", path: null },
+  { label: "Rent Payments", path: null },
+  { label: "Maintenance", path: null },
+  { label: "Employees", path: null },
+];
+
+export function Sidebar() {
+  return (
+    <nav className="sidebar" aria-label="Main navigation">
+      <div className="sidebar__brand">PropertyManager</div>
+      <ul className="sidebar__list">
+        {NAV_ITEMS.map((item) =>
+          item.path ? (
+            <li key={item.label}>
+              <NavLink
+                to={item.path}
+                end
+                className={({ isActive }) => "sidebar__link" + (isActive ? " sidebar__link--active" : "")}
+              >
+                {item.label}
+              </NavLink>
+            </li>
+          ) : (
+            <li key={item.label}>
+              <span className="sidebar__link sidebar__link--disabled" aria-disabled="true" title="Coming soon">
+                {item.label}
+              </span>
+            </li>
+          ),
+        )}
+      </ul>
+    </nav>
+  );
+}

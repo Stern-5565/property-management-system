@@ -5,7 +5,7 @@ Read this first if you're picking this project back up in a new conversation
 and decisions that aren't obvious just from reading the code, so you don't
 have to re-derive them.
 
-Last updated: 2026-08-04, after completing the Dashboard API (Prompt 17) - the backend business layer is now feature-complete per the scope doc's numbered prompts, up to the frontend.
+Last updated: 2026-08-04, after completing the React Foundation (Prompt 18) - the first piece of frontend work.
 
 ## Where things stand
 
@@ -28,14 +28,38 @@ Last updated: 2026-08-04, after completing the Dashboard API (Prompt 17) - the b
 
 **332/332 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 8 maintenance notes, 5 employees/users).
 
-**Not started yet:** all frontend work; deployment.
+**Frontend: React foundation done** (`frontend/`, plain React + JavaScript + CSS, Vite, react-router-dom, axios - per the scope doc's explicit "use plain React and readable CSS", no TypeScript/Tailwind/component library). Routing, API client with silent-refresh-on-401, auth context, protected routes, login/home/unauthorized/404 pages, sidebar+header layout. See "Frontend foundation" below for the full breakdown. No business-module pages yet, deliberately (see that section).
+
+**Not started yet:** frontend business modules (Landlords, Properties, Tenants, Tenancies, Payments, Maintenance, Employees, Dashboard) and reusable component library; deployment.
 
 ## Next steps, in order
 
 Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbered prompts):
 
-1. **Prompt 18+: Frontend** — React foundation (routing, login page, layout, sidebar/header, reusable table/form components, API client, auth context), then one module at a time (Landlords → Properties → Tenants → Tenancies → Payments → Maintenance → Employees), then the Dashboard (KPI cards, charts, report filters, CSV export).
-2. **Then testing/deployment** (later milestones).
+1. **Prompt 19: Reusable frontend components** — PageHeader, DataTable, Pagination, SearchInput, FilterPanel, StatusBadge, LoadingSpinner (already exists in `src/components/` from the foundation - extend it, don't replace it), ErrorMessage, ConfirmationDialog, FormField, SelectField, DateField, CurrencyField, EmptyState, KPI card.
+2. **Prompt 20+: one frontend module at a time** — Landlords, Properties, Tenants, Tenancies, Payments, Maintenance, Employees, each following the same repo-established "API service → page → manual test" flow (see `frontend/src/services/authService.js` as the template for a module's API service file).
+3. **Then the Dashboard frontend** (KPI cards, charts, report filters, CSV export) — replaces the placeholder `HomePage.jsx`.
+4. **Then testing/deployment** (later milestones).
+
+## Frontend foundation: how to run it, and the decisions worth knowing before touching it again
+
+**How to run:**
+- Backend: `venv\Scripts\python.exe -m uvicorn app.main:app --reload` from `backend/` (as before).
+- Frontend: `npm install` (first time only), then `npm run dev` from `frontend/` - serves on `http://localhost:5173`, matching the backend's `CORS_ALLOWED_ORIGINS` default.
+- `frontend/.env` (gitignored, copy from `.env.example`) sets `VITE_API_BASE_URL` - defaults to `http://localhost:8000/api`.
+- Demo login: any of the 5 seeded accounts (see the table above), password `Password123!`.
+
+**Folder structure** (`frontend/src/`): `api/` (the one shared Axios instance), `services/` (one file per backend module, each just wrapping that module's endpoints - `authService.js` is the template), `contexts/` (React Context providers - just `AuthContext` so far), `routes/` (routing helpers like `ProtectedRoute`), `layouts/` (the authenticated app shell - `MainLayout`/`Sidebar`/`Header`), `pages/` (one component per route), `components/` (generic, reusable-across-pages pieces - just `LoadingSpinner`/`ErrorBoundary` so far, Prompt 19 adds the rest), `utilities/` (small stateless helpers like `apiError.js`), `styles/global.css` (the only stylesheet - plain CSS with variables, no framework).
+
+**Token storage - a deliberate, documented compromise, not an oversight:** the access token lives in memory only (a module-level variable in `api/client.js`), never in any Web Storage - readable-by-JS storage is readable by an XSS payload too. The refresh token *should* live in an httpOnly cookie the browser attaches automatically, but `backend/app/api/routes/auth.py`'s own docstring already flags that the backend currently issues it as a plain JSON field, not a cookie - there is nothing for the browser to attach automatically yet. Given that backend limitation, the frontend stores the refresh token in `sessionStorage` (cleared when the tab closes, unlike `localStorage`) so a page reload doesn't force a re-login. Upgrading to real httpOnly-cookie delivery needs a backend change and is deferred, same category as the backend's own already-deferred items (refresh token revocation, login rate limiting).
+
+**Session restore on page load:** there's no access token to restore (it's memory-only, gone on reload) - `AuthContext`'s mount effect instead checks for a stored refresh token and, if found, silently calls `/auth/refresh` then `/auth/me` to rebuild the session. Verified working end-to-end via the Browser tool: login → full page reload → still authenticated, with the network log showing `/auth/refresh` + `/auth/me` firing on reload rather than a redirect to `/login`. (You'll see `/auth/refresh` fire twice in dev tools during that check - that's React 18 StrictMode double-invoking the mount effect in development only, not a real bug; production builds don't do this.)
+
+**401 handling:** `api/client.js`'s response interceptor catches a 401, attempts exactly one silent refresh (deduplicated via a shared in-flight promise if multiple requests 401 at once), and retries the original request. Only on refresh failure does it clear the session and notify `AuthContext` (via a registered callback, since an Axios interceptor can't use React hooks) - `/auth/*` requests themselves are excluded from this retry loop to avoid an infinite cycle.
+
+**Sidebar shows every future module already, mostly disabled:** `Sidebar.jsx`'s `NAV_ITEMS` lists all 7 business modules plus Dashboard; only Dashboard (`path: "/"`, currently the placeholder `HomePage`) is a real link today. As each module's frontend gets built, flip its `path: null` to a real route - this was a deliberate choice over omitting the links entirely, so the overall app shape is visible even before every module exists.
+
+**`ProtectedRoute` already supports role-gating (`allowedRoles` prop) even though nothing uses it yet** - no business pages exist this early to need it. Wire it up per-module as role-restricted pages get built (e.g. an Employees page would pass `allowedRoles={["Administrator", "PropertyManager"]}`, matching `CAN_VIEW_EMPLOYEES` on the backend).
 
 ## Dashboard module: calculations, permission shape, and one SQL Server gotcha avoided
 
