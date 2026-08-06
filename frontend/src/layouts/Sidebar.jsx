@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: "Dashboard", path: "/" },
   { label: "Landlords", path: "/landlords" },
   { label: "Properties", path: "/properties" },
-  { label: "Tenants", path: null },
+  { label: "Tenants", path: "/tenants" },
   { label: "Tenancies", path: null },
   { label: "Rent Payments", path: null },
   { label: "Maintenance", path: null },
