@@ -5,7 +5,7 @@ Read this first if you're picking this project back up in a new conversation
 and decisions that aren't obvious just from reading the code, so you don't
 have to re-derive them.
 
-Last updated: 2026-08-06, after completing the Employees frontend module (Prompt 20 - the last of the repeatable CRUD group).
+Last updated: 2026-08-06, after completing the Tenancy frontend module (Prompt 21).
 
 ## Where things stand
 
@@ -28,18 +28,17 @@ Last updated: 2026-08-06, after completing the Employees frontend module (Prompt
 
 **332/332 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 8 maintenance notes, 5 employees/users).
 
-**Frontend: React foundation + reusable component library + Landlords + Properties + Tenants + Employees modules done** (`frontend/`, plain React + JavaScript + CSS, Vite, react-router-dom, axios - per the scope doc's explicit "use plain React and readable CSS", no TypeScript/Tailwind/component library). Routing, API client with silent-refresh-on-401, auth context, protected routes, sidebar+header layout, all 15 of Prompt 19's reusable components, and now all four repeatable-CRUD modules built on top of them - Prompt 20 is fully done. See "Frontend foundation", "Reusable component library", "Landlords frontend module (Prompt 20)", "Properties frontend module (Prompt 20)", "Tenants frontend module (Prompt 20)", and "Employees frontend module (Prompt 20)" below.
+**Frontend: React foundation + reusable component library + all four repeatable-CRUD modules + Tenancies done** (`frontend/`, plain React + JavaScript + CSS, Vite, react-router-dom, axios - per the scope doc's explicit "use plain React and readable CSS", no TypeScript/Tailwind/component library). Routing, API client with silent-refresh-on-401, auth context, protected routes, sidebar+header layout, all 15 of Prompt 19's reusable components, Prompt 20's four CRUD modules, and now Prompt 21 (Tenancies - the first module with its own bespoke lifecycle, not the generic CRUD shape). See "Frontend foundation", "Reusable component library", "Landlords frontend module (Prompt 20)", "Properties frontend module (Prompt 20)", "Tenants frontend module (Prompt 20)", "Employees frontend module (Prompt 20)", and "Tenancy frontend module (Prompt 21)" below.
 
-**Not started yet:** the remaining frontend business modules (Tenancies, Payments, Maintenance) and the real Dashboard page; deployment.
+**Not started yet:** the remaining frontend business modules (Payments, Maintenance) and the real Dashboard page; deployment.
 
 ## Next steps, in order
 
 Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbered prompts):
 
-1. **Prompt 21: Tenancy frontend** - more involved (property/tenant selectors, activate/end/cancel actions, an ending-soon page) - its own prompt, not the generic CRUD one.
-2. **Prompt 22: Payments frontend**, then **Prompt 23: Maintenance frontend** (see the doc for each's specific requirements).
-3. **Then the Dashboard frontend** (KPI cards, charts, report filters, CSV export) — replaces the placeholder `HomePage.jsx`, and is the first real consumer of `KpiCard`.
-4. **Then testing/deployment** (later milestones).
+1. **Prompt 22: Payments frontend**, then **Prompt 23: Maintenance frontend** (see the doc for each's specific requirements - both have their own bespoke shape like Tenancies did, not the generic CRUD template).
+2. **Then the Dashboard frontend** (KPI cards, charts, report filters, CSV export) — replaces the placeholder `HomePage.jsx`, and is the first real consumer of `KpiCard`.
+3. **Then testing/deployment** (later milestones).
 
 ## Landlords frontend module (Prompt 20) - the template every other CRUD module should copy
 
@@ -82,6 +81,20 @@ Same file/route shape as the other three (`services/employeeService.js`, `pages/
 `EmployeeFormPage` differs from every other module's form in one way worth remembering: **`Email` and `HireDate` are both required fields** in `EmployeeWriteBase` (no optional-email escape hatch like Landlord/Tenant have), so client-side `validate()` rejects blank Email/HireDate up front instead of only checking shape - don't copy `LandlordFormPage`'s "empty email is fine" assumption here. `HireDate` gets the same `DateField max={TODAY}` + explicit check pattern as `TenantFormPage`'s `DateOfBirth`, mirroring `EmployeeWriteBase.hire_date_not_in_future`.
 
 Nothing new introduced at the cross-module level (`Toast`, `ConfirmationDialog`'s `confirmDisabled`, the toast-across-navigation pattern all reused as-is) - only `roles.js` gained the new, narrower `CAN_VIEW_EMPLOYEES`/`CAN_MANAGE_EMPLOYEES` pair, and `Sidebar.jsx`'s `Employees` entry flipped from `path: null` to `/employees` (now every Prompt-20 module's nav link is live; only Tenancies/Rent Payments/Maintenance remain disabled). Manually created and fully deactivated/reactivated a throwaway employee via the browser to verify the round trip, then deleted it directly via `sqlcmd` (`DELETE FROM Employees WHERE EmployeeId = <id>`, `SET QUOTED_IDENTIFIER ON` first) to restore the seeded count of 5 - the UI itself never hard-deletes (`deactivateEmployee` is a soft-delete via `DELETE /api/employees/{id}`, which is `EmployeeService.deactivate_employee` under the hood, not a real SQL delete).
+
+## Tenancy frontend module (Prompt 21) - the first module with its own bespoke shape, not the generic CRUD template
+
+Unlike every Prompt 20 module, Tenancy has no `PATCH /status` and no free-text `search` param on its list endpoint (`TenancyRepository.list` only filters by `property_id`/`tenant_id`/`tenancy_status` - see `tenancyService.js`'s docstring), so `TenanciesListPage` uses three `SelectField` dropdown filters instead of a `SearchInput`. Property/Tenant filter and form-selector options are loaded the same direct `pageSize:100` way `PropertyFormPage`'s landlord dropdown already does - no new shared "options loader" abstraction introduced for these extra call sites.
+
+**Four new files, mirroring the file/route shape but not the Prompt-20 page template**: `services/tenancyService.js`, `pages/tenancies/{TenanciesList,TenancyDetail,TenancyForm,TenancyEndingSoon}Page.jsx`, `constants/tenancyOptions.js` (`TENANCY_STATUS_OPTIONS`, filter-only - never a form field, since status only ever changes through the lifecycle actions below). `roles.js` gained `CAN_VIEW_TENANCIES`/`CAN_MANAGE_TENANCIES` (same Administrator+PropertyManager+ReadOnly / Administrator+PropertyManager shape as Landlords), and `Sidebar.jsx`'s `Tenancies` entry went live.
+
+**`TenancyDetailPage` is the first detail page with THREE conditionally-available lifecycle actions instead of one toggle**, gated on the tenancy's current `TenancyStatus` exactly like `tenancy_service.py`'s own transition checks: Edit link and "Activate" only show for `Draft`; "End tenancy" only shows for `Active`/`Ending Soon`; "Cancel tenancy" shows for anything not already `Ended`/`Cancelled` (so Draft can be both Activated or Cancelled, Active can be both Ended or Cancelled). All three share ONE `ConfirmationDialog` instance via a `pendingAction` state (`"activate" | "end" | "cancel" | null`) with a `dialogConfig` lookup for each action's title/message/confirmLabel, rather than three separate dialog instances - only one action is ever in flight at a time regardless of how many buttons are visible. "End tenancy" is the one action needing extra input: since `ConfirmationDialog`'s `message` prop renders inside a `<p>` (no children slot for embedded form controls - putting a `DateField` in there would be invalid HTML, a `<div>` inside a `<p>`), the optional end-date `DateField` sits next to the button BEFORE the dialog opens, and the dialog's message text interpolates the chosen date (or explains it'll default to today) - never both.
+
+**Manually verified the full lifecycle live via the Browser tool**, catching a genuinely useful real behavior along the way: ending a freshly-activated same-day tenancy with no end date chosen correctly surfaced the backend's `TENANCY_INVALID_END_DATE` error (`end_date <= StartDate` when both are "today"), confirming the error-display pattern works for this module's business rules exactly as it does elsewhere, and that a Draft→Active→Ended tenancy correctly flips its property Occupied→Vacant at each transition (verified by cross-checking `PropertyDetailPage` after each action). Also confirmed role-gating end-to-end: Administrator sees all three actions; PropertyManager (same `CAN_MANAGE_TENANCIES` shape) would too (not separately re-tested, since the role list is identical to Landlords', already proven); MaintenanceEmployee is bounced to `/unauthorized` from `/tenancies` itself, matching `CAN_VIEW_TENANCIES` excluding them. Cleaned up the manually-created test tenancy via `sqlcmd` (`DELETE FROM Tenancies WHERE TenancyId = <id>`) to restore the seeded count of 12 - confirmed `AuditLogs.EntityId` has no FK constraint back to `Tenancies`, so the delete needed no extra cleanup there.
+
+**`TenancyEndingSoonPage`** (`/tenancies/ending-soon`, linked from a button in `TenanciesListPage`'s `PageHeader` actions, not a separate sidebar entry) hits `GET /api/tenancies/expiring?days=N` with a 30/60/90-day `SelectField` toggle. It's the first list-shaped page in the app with no `Pagination` component - the endpoint isn't paginated (see `tenancyService.js`), since it's meant to be a short attention list, not a full browse.
+
+**`TenancyFormPage`** only ever creates/edits a Draft (`PUT` is rejected server-side once a tenancy leaves Draft - `TENANCY_NOT_EDITABLE`, 409 - which is exactly why `TenancyDetailPage` only shows the Edit link in that state). Client-side validation covers only the cheap static rules (required fields, `MonthlyRent > 0`, `PaymentDueDay` 1-28, `EndDate` after `StartDate` - mirroring `TenancyCreate.validate_date_order`); overlap conflicts and inactive-property/tenant checks are deliberately left to the server, since those only apply at Activate time, not at Draft creation - the scope doc's Prompt 21 explicitly says not to duplicate backend business-rule validation here.
 
 ## Frontend foundation: how to run it, and the decisions worth knowing before touching it again
 

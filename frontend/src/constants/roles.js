@@ -31,3 +31,7 @@ export const CAN_MANAGE_TENANTS = [ADMINISTRATOR, PROPERTY_MANAGER];
 // records are treated as "employee administration".
 export const CAN_VIEW_EMPLOYEES = [ADMINISTRATOR, PROPERTY_MANAGER];
 export const CAN_MANAGE_EMPLOYEES = [ADMINISTRATOR];
+
+// Tenancies: same shape as Landlords.
+export const CAN_VIEW_TENANCIES = [ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY];
+export const CAN_MANAGE_TENANCIES = [ADMINISTRATOR, PROPERTY_MANAGER];

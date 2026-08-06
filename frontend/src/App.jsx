@@ -41,6 +41,10 @@ import { TenantFormPage } from "./pages/tenants/TenantFormPage";
 import { EmployeesListPage } from "./pages/employees/EmployeesListPage";
 import { EmployeeDetailPage } from "./pages/employees/EmployeeDetailPage";
 import { EmployeeFormPage } from "./pages/employees/EmployeeFormPage";
+import { TenanciesListPage } from "./pages/tenancies/TenanciesListPage";
+import { TenancyDetailPage } from "./pages/tenancies/TenancyDetailPage";
+import { TenancyFormPage } from "./pages/tenancies/TenancyFormPage";
+import { TenancyEndingSoonPage } from "./pages/tenancies/TenancyEndingSoonPage";
 import {
   CAN_VIEW_LANDLORDS,
   CAN_MANAGE_LANDLORDS,
@@ -50,6 +54,8 @@ import {
   CAN_MANAGE_TENANTS,
   CAN_VIEW_EMPLOYEES,
   CAN_MANAGE_EMPLOYEES,
+  CAN_VIEW_TENANCIES,
+  CAN_MANAGE_TENANCIES,
 } from "./constants/roles";
 
 export function App() {
@@ -104,6 +110,17 @@ export function App() {
                   <Route element={<ProtectedRoute allowedRoles={CAN_MANAGE_EMPLOYEES} />}>
                     <Route path="/employees/new" element={<EmployeeFormPage />} />
                     <Route path="/employees/:id/edit" element={<EmployeeFormPage />} />
+                  </Route>
+                </Route>
+
+                <Route element={<ProtectedRoute allowedRoles={CAN_VIEW_TENANCIES} />}>
+                  <Route path="/tenancies" element={<TenanciesListPage />} />
+                  <Route path="/tenancies/ending-soon" element={<TenancyEndingSoonPage />} />
+                  <Route path="/tenancies/:id" element={<TenancyDetailPage />} />
+
+                  <Route element={<ProtectedRoute allowedRoles={CAN_MANAGE_TENANCIES} />}>
+                    <Route path="/tenancies/new" element={<TenancyFormPage />} />
+                    <Route path="/tenancies/:id/edit" element={<TenancyFormPage />} />
                   </Route>
                 </Route>
               </Route>
