@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { getErrorMessage } from "../utilities/apiError";
+import { getDefaultLandingPath } from "../utilities/permissions";
 
 export function LoginPage() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -15,7 +16,7 @@ export function LoginPage() {
 
   // Already logged in (e.g. typed /login manually) - nothing to do here.
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={getDefaultLandingPath(user)} replace />;
   }
 
   async function handleSubmit(event) {
@@ -23,8 +24,8 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login(email, password);
-      const redirectTo = location.state?.from?.pathname ?? "/";
+      const loggedInUser = await login(email, password);
+      const redirectTo = location.state?.from?.pathname ?? getDefaultLandingPath(loggedInUser);
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setError(getErrorMessage(err));

@@ -1,9 +1,9 @@
 /**
- * One headline number - built for the real Dashboard page (which will
- * replace pages/HomePage.jsx) to render the /api/dashboard/summary
- * figures (TotalActiveProperties, OccupancyPercentage, RentDueThisMonth,
- * ...) as a row of cards, but generic enough for any "one number, one
- * label" spot in any module.
+ * One headline number - used by the real Dashboard page
+ * (pages/DashboardPage.jsx) to render the /api/dashboard/summary figures
+ * (TotalActiveProperties, OccupancyPercentage, RentDueThisMonth, ...) as
+ * a row of cards, but generic enough for any "one number, one label"
+ * spot in any module.
  */
 export function KpiCard({ label, value, hint, tone = "neutral" }) {
   return (

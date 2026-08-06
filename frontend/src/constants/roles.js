@@ -56,3 +56,14 @@ export const CAN_VIEW_MAINTENANCE = [ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY]
 export const CAN_MANAGE_MAINTENANCE = [ADMINISTRATOR, PROPERTY_MANAGER];
 export const CAN_UPDATE_MAINTENANCE_WORK = [ADMINISTRATOR, PROPERTY_MANAGER, MAINTENANCE_EMPLOYEE];
 export const CAN_ACCESS_MAINTENANCE = [ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY, MAINTENANCE_EMPLOYEE];
+
+// Dashboard: same shape as Landlords - MaintenanceEmployee is excluded
+// because the dashboard mixes financial figures (rent collected,
+// outstanding rent) in with operational ones, and the scope doc bars
+// MaintenanceEmployee from "financial reports" - see
+// backend/app/core/roles.py's CAN_VIEW_DASHBOARD comment. Since "/" (the
+// Dashboard) is also the default post-login landing page,
+// utilities/permissions.js's getDefaultLandingPath sends a
+// MaintenanceEmployee to /maintenance instead - the one role that would
+// otherwise land on /unauthorized immediately after signing in.
+export const CAN_VIEW_DASHBOARD = [ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY];

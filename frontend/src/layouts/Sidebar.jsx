@@ -1,8 +1,10 @@
 /**
- * Navigation shell. Every business module is now a real, clickable
- * route - Maintenance (Prompt 23) was the last one left disabled. Only
- * the Dashboard link still points at the Prompt 18 placeholder HomePage,
- * to be replaced once the real Dashboard (Prompt 24) is built.
+ * Navigation shell. Every item is a real, clickable route - Dashboard
+ * (Prompt 24) was the last one still pointing at a placeholder. No
+ * role-gating here (every link shows to every logged-in user); a role
+ * that can't actually view a module gets bounced to /unauthorized by
+ * that route's own ProtectedRoute if they click through - same as every
+ * other nav item.
  */
 import { NavLink } from "react-router-dom";
 

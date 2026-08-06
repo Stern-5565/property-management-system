@@ -15,9 +15,15 @@
  * this page can't see or control that, so it just explains it via the
  * page description when it detects that role without full manage access,
  * satisfying the scope doc's "employee-specific assigned-work view".
+ *
+ * `?priority=` is read once on mount (via useSearchParams) to prefill the
+ * Priority filter dropdown - used by the Dashboard's "Emergency
+ * Maintenance" attention list's "View all" link
+ * (/maintenance?priority=Emergency), same lightweight query-param-prefill
+ * pattern as RentPaymentsListPage's `?tenancyId=`.
  */
 import { useCallback, useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { PageHeader } from "../../components/PageHeader";
 import { DataTable } from "../../components/DataTable";
 import { Pagination } from "../../components/Pagination";
@@ -44,6 +50,7 @@ export function MaintenanceRequestsListPage() {
   const canViewWorkload = hasAnyRole(user, CAN_VIEW_MAINTENANCE);
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
@@ -53,7 +60,7 @@ export function MaintenanceRequestsListPage() {
   const [propertyFilter, setPropertyFilter] = useState("");
   const [employeeFilter, setEmployeeFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState(searchParams.get("priority") ?? "");
   const [statusFilter, setStatusFilter] = useState("");
   const [propertyOptions, setPropertyOptions] = useState([]);
   const [employeeOptions, setEmployeeOptions] = useState([]);

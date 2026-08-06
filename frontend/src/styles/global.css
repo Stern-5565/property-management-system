@@ -703,6 +703,157 @@ h1 {
   margin: 0.15rem 0 0;
 }
 
+/* --- BarChart --- */
+
+.bar-chart {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.bar-chart__title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+}
+
+.bar-chart__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.bar-chart__row {
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.bar-chart__label {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-chart__track {
+  background: var(--color-bg);
+  border-radius: 999px;
+  height: 0.6rem;
+  overflow: hidden;
+}
+
+.bar-chart__fill {
+  background: var(--color-primary);
+  height: 100%;
+  border-radius: 999px;
+}
+
+.bar-chart__value {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bar-chart__empty {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* --- Skeleton --- */
+
+.skeleton {
+  display: inline-block;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg) 50%, var(--color-border) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* --- Dashboard page --- */
+
+.dashboard-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.dashboard-grid__full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.dashboard-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-section__title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.dashboard-section__empty {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.dashboard-section__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dashboard-section__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dashboard-section__list li:last-child .dashboard-section__row {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
 .form-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);

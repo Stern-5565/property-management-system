@@ -9,10 +9,15 @@
  *   active (see layouts/MainLayout.jsx).
  * - "*" catches any URL that doesn't match one of the routes above.
  *
- * "/" (HomePage) and "/dev/components" (the dev-only Prompt 19 component
- * reference - see ComponentShowcasePage.jsx) need only a login. The
- * Landlords routes are the first to use ProtectedRoute's `allowedRoles`
- * for real: nested ProtectedRoutes narrow access twice - once so only
+ * "/dev/components" (the dev-only Prompt 19 component reference - see
+ * ComponentShowcasePage.jsx) needs only a login. "/" (DashboardPage) is
+ * the first route to gate the landing page itself: CAN_VIEW_DASHBOARD
+ * excludes MaintenanceEmployee (the dashboard mixes in financial
+ * figures), so LoginPage's post-login redirect uses
+ * getDefaultLandingPath (utilities/permissions.js) instead of hardcoding
+ * "/", sending that one role to /maintenance instead. The Landlords
+ * routes are the first to use ProtectedRoute's `allowedRoles` for real:
+ * nested ProtectedRoutes narrow access twice - once so only
  * CAN_VIEW_LANDLORDS roles can see the module at all, again so only
  * CAN_MANAGE_LANDLORDS roles reach the create/edit forms (matching the
  * backend's own CAN_VIEW_LANDLORDS/CAN_MANAGE_LANDLORDS split in
@@ -25,7 +30,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { MainLayout } from "./layouts/MainLayout";
 import { LoginPage } from "./pages/LoginPage";
-import { HomePage } from "./pages/HomePage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { ComponentShowcasePage } from "./pages/ComponentShowcasePage";
 import { UnauthorizedPage } from "./pages/UnauthorizedPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
@@ -70,6 +75,7 @@ import {
   CAN_ACCESS_MAINTENANCE,
   CAN_MANAGE_MAINTENANCE,
   CAN_VIEW_MAINTENANCE,
+  CAN_VIEW_DASHBOARD,
 } from "./constants/roles";
 
 export function App() {
@@ -83,9 +89,12 @@ export function App() {
 
             <Route element={<ProtectedRoute />}>
               <Route element={<MainLayout />}>
-                <Route path="/" element={<HomePage />} />
                 {/* Dev-only component library reference - see ComponentShowcasePage.jsx. Deliberately not in the sidebar. */}
                 <Route path="/dev/components" element={<ComponentShowcasePage />} />
+
+                <Route element={<ProtectedRoute allowedRoles={CAN_VIEW_DASHBOARD} />}>
+                  <Route path="/" element={<DashboardPage />} />
+                </Route>
 
                 <Route element={<ProtectedRoute allowedRoles={CAN_VIEW_LANDLORDS} />}>
                   <Route path="/landlords" element={<LandlordsListPage />} />
