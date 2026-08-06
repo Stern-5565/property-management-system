@@ -1,10 +1,8 @@
 /**
- * Navigation shell. Dashboard, Landlords, Properties, Tenants, and
- * Employees are real, clickable routes; the remaining modules are listed
- * (so the overall app shape is visible) but rendered disabled, since they
- * don't have a frontend yet. As each module gets its own frontend built,
- * flip its entry here from `path: null` to a real path (see
- * documentation/progress-log.md for build order).
+ * Navigation shell. Every business module is now a real, clickable
+ * route - Maintenance (Prompt 23) was the last one left disabled. Only
+ * the Dashboard link still points at the Prompt 18 placeholder HomePage,
+ * to be replaced once the real Dashboard (Prompt 24) is built.
  */
 import { NavLink } from "react-router-dom";
 
@@ -15,7 +13,7 @@ const NAV_ITEMS = [
   { label: "Tenants", path: "/tenants" },
   { label: "Tenancies", path: "/tenancies" },
   { label: "Rent Payments", path: "/rent-payments" },
-  { label: "Maintenance", path: null },
+  { label: "Maintenance", path: "/maintenance" },
   { label: "Employees", path: "/employees" },
 ];
 
@@ -24,25 +22,17 @@ export function Sidebar() {
     <nav className="sidebar" aria-label="Main navigation">
       <div className="sidebar__brand">PropertyManager</div>
       <ul className="sidebar__list">
-        {NAV_ITEMS.map((item) =>
-          item.path ? (
-            <li key={item.label}>
-              <NavLink
-                to={item.path}
-                end={item.path === "/"}
-                className={({ isActive }) => "sidebar__link" + (isActive ? " sidebar__link--active" : "")}
-              >
-                {item.label}
-              </NavLink>
-            </li>
-          ) : (
-            <li key={item.label}>
-              <span className="sidebar__link sidebar__link--disabled" aria-disabled="true" title="Coming soon">
-                {item.label}
-              </span>
-            </li>
-          ),
-        )}
+        {NAV_ITEMS.map((item) => (
+          <li key={item.label}>
+            <NavLink
+              to={item.path}
+              end={item.path === "/"}
+              className={({ isActive }) => "sidebar__link" + (isActive ? " sidebar__link--active" : "")}
+            >
+              {item.label}
+            </NavLink>
+          </li>
+        ))}
       </ul>
     </nav>
   );

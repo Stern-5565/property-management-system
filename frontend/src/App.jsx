@@ -50,6 +50,10 @@ import { RentPaymentDetailPage } from "./pages/rent-payments/RentPaymentDetailPa
 import { RentPaymentFormPage } from "./pages/rent-payments/RentPaymentFormPage";
 import { RentPaymentOverduePage } from "./pages/rent-payments/RentPaymentOverduePage";
 import { RentPaymentDueThisMonthPage } from "./pages/rent-payments/RentPaymentDueThisMonthPage";
+import { MaintenanceRequestsListPage } from "./pages/maintenance/MaintenanceRequestsListPage";
+import { MaintenanceRequestDetailPage } from "./pages/maintenance/MaintenanceRequestDetailPage";
+import { MaintenanceRequestFormPage } from "./pages/maintenance/MaintenanceRequestFormPage";
+import { MaintenanceWorkloadPage } from "./pages/maintenance/MaintenanceWorkloadPage";
 import {
   CAN_VIEW_LANDLORDS,
   CAN_MANAGE_LANDLORDS,
@@ -63,6 +67,9 @@ import {
   CAN_MANAGE_TENANCIES,
   CAN_VIEW_RENT_PAYMENTS,
   CAN_MANAGE_RENT_PAYMENTS,
+  CAN_ACCESS_MAINTENANCE,
+  CAN_MANAGE_MAINTENANCE,
+  CAN_VIEW_MAINTENANCE,
 } from "./constants/roles";
 
 export function App() {
@@ -140,6 +147,20 @@ export function App() {
                   <Route element={<ProtectedRoute allowedRoles={CAN_MANAGE_RENT_PAYMENTS} />}>
                     <Route path="/rent-payments/new" element={<RentPaymentFormPage />} />
                     <Route path="/rent-payments/:id/edit" element={<RentPaymentFormPage />} />
+                  </Route>
+                </Route>
+
+                <Route element={<ProtectedRoute allowedRoles={CAN_ACCESS_MAINTENANCE} />}>
+                  <Route path="/maintenance" element={<MaintenanceRequestsListPage />} />
+                  <Route path="/maintenance/:id" element={<MaintenanceRequestDetailPage />} />
+
+                  <Route element={<ProtectedRoute allowedRoles={CAN_VIEW_MAINTENANCE} />}>
+                    <Route path="/maintenance/workload" element={<MaintenanceWorkloadPage />} />
+                  </Route>
+
+                  <Route element={<ProtectedRoute allowedRoles={CAN_MANAGE_MAINTENANCE} />}>
+                    <Route path="/maintenance/new" element={<MaintenanceRequestFormPage />} />
+                    <Route path="/maintenance/:id/edit" element={<MaintenanceRequestFormPage />} />
                   </Route>
                 </Route>
               </Route>

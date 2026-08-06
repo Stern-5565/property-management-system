@@ -209,11 +209,6 @@ h1 {
   font-weight: 600;
 }
 
-.sidebar__link--disabled {
-  color: #5a6180;
-  cursor: not-allowed;
-}
-
 .app-shell__main {
   flex: 1;
   display: flex;
@@ -495,6 +490,10 @@ h1 {
   border-bottom: none;
 }
 
+.data-table__row--emergency {
+  background: var(--color-danger-bg);
+}
+
 .data-table__status {
   padding: 2rem 0;
   display: flex;
@@ -675,6 +674,33 @@ h1 {
 .detail-card__subheading {
   font-size: 1rem;
   margin: 1.5rem 0 0.75rem;
+}
+
+.detail-card--emergency {
+  border-left: 4px solid var(--color-danger);
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.timeline__item {
+  border-left: 2px solid var(--color-border);
+  padding-left: 0.9rem;
+}
+
+.timeline__meta {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.timeline__text {
+  margin: 0.15rem 0 0;
 }
 
 .form-card {

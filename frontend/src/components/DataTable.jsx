@@ -11,6 +11,11 @@
  * a computed value or another component (e.g. <StatusBadge
  * status={row.PaymentStatus} />) without DataTable needing to know
  * anything about that column's content.
+ *
+ * `getRowClassName` is optional (added for Maintenance's emergency-row
+ * highlighting - see MaintenanceRequestsListPage) - lets a row carry an
+ * extra class (e.g. a background tint) without DataTable needing to know
+ * why.
  */
 import { LoadingSpinner } from "./LoadingSpinner";
 import { ErrorMessage } from "./ErrorMessage";
@@ -20,6 +25,7 @@ export function DataTable({
   columns,
   rows,
   getRowKey = (row, index) => row.id ?? index,
+  getRowClassName,
   loading = false,
   error = null,
   onRetry,
@@ -58,7 +64,7 @@ export function DataTable({
       </thead>
       <tbody>
         {rows.map((row, index) => (
-          <tr key={getRowKey(row, index)}>
+          <tr key={getRowKey(row, index)} className={getRowClassName ? getRowClassName(row) : undefined}>
             {columns.map((column) => (
               <td key={column.key}>{column.render ? column.render(row) : row[column.key]}</td>
             ))}
