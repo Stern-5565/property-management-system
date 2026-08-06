@@ -5,7 +5,7 @@ Read this first if you're picking this project back up in a new conversation
 and decisions that aren't obvious just from reading the code, so you don't
 have to re-derive them.
 
-Last updated: 2026-08-06, after completing the Landlords frontend module (Prompt 20).
+Last updated: 2026-08-06, after completing the Properties frontend module (Prompt 20).
 
 ## Where things stand
 
@@ -28,15 +28,15 @@ Last updated: 2026-08-06, after completing the Landlords frontend module (Prompt
 
 **332/332 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 8 maintenance notes, 5 employees/users).
 
-**Frontend: React foundation + reusable component library + Landlords module done** (`frontend/`, plain React + JavaScript + CSS, Vite, react-router-dom, axios - per the scope doc's explicit "use plain React and readable CSS", no TypeScript/Tailwind/component library). Routing, API client with silent-refresh-on-401, auth context, protected routes, sidebar+header layout, all 15 of Prompt 19's reusable components, and now the first full CRUD module (list/detail/create/edit + activate/deactivate) built on top of them. See "Frontend foundation", "Reusable component library", and "Landlords frontend module (Prompt 20)" below.
+**Frontend: React foundation + reusable component library + Landlords + Properties modules done** (`frontend/`, plain React + JavaScript + CSS, Vite, react-router-dom, axios - per the scope doc's explicit "use plain React and readable CSS", no TypeScript/Tailwind/component library). Routing, API client with silent-refresh-on-401, auth context, protected routes, sidebar+header layout, all 15 of Prompt 19's reusable components, and now two full CRUD modules built on top of them. See "Frontend foundation", "Reusable component library", "Landlords frontend module (Prompt 20)", and "Properties frontend module (Prompt 20)" below.
 
-**Not started yet:** the remaining frontend business modules (Properties, Tenants, Tenancies, Payments, Maintenance, Employees) and the real Dashboard page; deployment.
+**Not started yet:** the remaining frontend business modules (Tenants, Tenancies, Payments, Maintenance, Employees) and the real Dashboard page; deployment.
 
 ## Next steps, in order
 
 Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbered prompts):
 
-1. **Prompt 20 again, for Properties, Tenants, then Employees** (the doc explicitly groups these four - Landlords, Properties, Tenants, Employees - under one repeatable prompt). Follow the exact file/route/permission shape `pages/landlords/` established (see below) - it's meant to be copied, not redesigned each time.
+1. **Prompt 20 again, for Tenants, then Employees** (the doc groups Landlords/Properties/Tenants/Employees under one repeatable prompt - two down, two to go). Follow the exact file/route/permission shape `pages/landlords/` and `pages/properties/` established (see below) - it's meant to be copied, not redesigned each time.
 2. **Prompt 21: Tenancy frontend** - more involved (property/tenant selectors, activate/end/cancel actions, an ending-soon page) - its own prompt, not the generic CRUD one.
 3. **Prompt 22: Payments frontend**, then **Prompt 23: Maintenance frontend** (see the doc for each's specific requirements).
 4. **Then the Dashboard frontend** (KPI cards, charts, report filters, CSV export) — replaces the placeholder `HomePage.jsx`, and is the first real consumer of `KpiCard`.
@@ -59,7 +59,14 @@ Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbere
 **A real bug caught and fixed during manual verification** (worth remembering for every future module's detail-page action pattern): when `LandlordDetailPage`'s deactivate action failed server-side (`LANDLORD_HAS_ACTIVE_PROPERTIES`), the original code only closed `ConfirmationDialog` on the *success* path, leaving it open on error. The `ErrorMessage` banner rendered underneath the dialog's `position: fixed` backdrop (z-index), so the error was in the DOM and even in the accessibility tree, but **invisible** - the kind of bug a text-only check misses and only shows up checking real rendered visibility (`element.offsetParent !== null`) or a screenshot. Fixed by closing the dialog in a `.finally()` so it closes on both outcomes, error banner rendering visibly on the underlying page. Apply this same "close the dialog before/regardless of showing the error" shape to every other module's action-with-a-dialog flow.
 
 **Client-side vs. server-side validation split** (`LandlordFormPage.jsx`): client-side checks only the cheap, obviously-wrong cases - required fields and the company-or-full-name rule (mirroring `LandlordWriteBase.require_company_or_full_name` in the backend schema) - so the user gets instant feedback without a round trip. Duplicate-email detection is NOT duplicated client-side; that error only ever comes from the server's response message. This is the balance to strike for every future module's form: mirror simple, static backend rules client-side; never re-implement anything that requires a database lookup.
-3. **Then testing/deployment** (later milestones).
+
+## Properties frontend module (Prompt 20) - second module, first to expose a real backend API gap
+
+Followed the Landlords file/route shape exactly (`services/propertyService.js`, `pages/properties/{List,Detail,Form}Page.jsx`, nested `ProtectedRoute`s with `CAN_VIEW_PROPERTIES`/`CAN_MANAGE_PROPERTIES`). Two things worth knowing that are specific to this module:
+
+- **PropertyStatus (Vacant/Occupied/Under Maintenance/Unavailable/Archived) and IsActive (active/deactivated) are two completely separate actions on `PropertyDetailPage`**, because they're two separate backend concepts: `PropertyStatus` changes via `PATCH /status` and is freely reversible (a direct "Change status" `SelectField` + button, no confirmation dialog needed - nothing destructive about marking a property "Under Maintenance"); `IsActive` only ever goes false, via `DELETE` (blocked if the property has an active/upcoming/draft tenancy), behind the same `ConfirmationDialog` pattern as Landlords.
+- **There is no "reactivate" endpoint for Properties**, unlike Landlords (`PATCH /api/landlords/{id}/status` accepts `IsActive: bool` either direction; `PropertyStatusUpdate` only ever carries the `PropertyStatus` enum, never `IsActive` - see `backend/app/services/property_service.py`, which has no `set_active_status` method at all). This is an existing, already-tested backend gap, not something introduced now - `PropertyDetailPage.jsx` reflects it honestly: once a property is deactivated, its action buttons disappear entirely and a plain "This property has been deactivated" note shows instead, rather than a client-side reactivate button that would call an endpoint that doesn't exist. **If a real reactivate capability is ever wanted, it needs a new backend endpoint first** (`PropertyService.set_active_status`, mirroring `LandlordService`'s), not a frontend-only fix.
+- The landlord dropdown in `PropertyFormPage` (and the landlord filter in `PropertiesListPage`) both call `landlordService.listLandlords({ isActive: true, pageSize: 100 })` directly - no new shared "options loader" abstraction was introduced for just two call sites. `PropertyDetailPage` also does one extra `getLandlord(property.LandlordId)` call to show the owning landlord's display name (linked to `/landlords/{id}`) since `PropertyResponse` only carries the bare `LandlordId`.
 
 ## Frontend foundation: how to run it, and the decisions worth knowing before touching it again
 

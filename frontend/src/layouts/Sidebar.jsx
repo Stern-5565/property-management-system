@@ -11,7 +11,7 @@ import { NavLink } from "react-router-dom";
 const NAV_ITEMS = [
   { label: "Dashboard", path: "/" },
   { label: "Landlords", path: "/landlords" },
-  { label: "Properties", path: null },
+  { label: "Properties", path: "/properties" },
   { label: "Tenants", path: null },
   { label: "Tenancies", path: null },
   { label: "Rent Payments", path: null },

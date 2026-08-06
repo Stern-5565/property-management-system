@@ -14,3 +14,7 @@ export const READ_ONLY = "ReadOnly";
 // has no access at all - see backend/app/core/roles.py's own comment.
 export const CAN_VIEW_LANDLORDS = [ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY];
 export const CAN_MANAGE_LANDLORDS = [ADMINISTRATOR, PROPERTY_MANAGER];
+
+// Properties: same shape as Landlords.
+export const CAN_VIEW_PROPERTIES = [ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY];
+export const CAN_MANAGE_PROPERTIES = [ADMINISTRATOR, PROPERTY_MANAGER];

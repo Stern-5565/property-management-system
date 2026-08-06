@@ -32,7 +32,10 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 import { LandlordsListPage } from "./pages/landlords/LandlordsListPage";
 import { LandlordDetailPage } from "./pages/landlords/LandlordDetailPage";
 import { LandlordFormPage } from "./pages/landlords/LandlordFormPage";
-import { CAN_VIEW_LANDLORDS, CAN_MANAGE_LANDLORDS } from "./constants/roles";
+import { PropertiesListPage } from "./pages/properties/PropertiesListPage";
+import { PropertyDetailPage } from "./pages/properties/PropertyDetailPage";
+import { PropertyFormPage } from "./pages/properties/PropertyFormPage";
+import { CAN_VIEW_LANDLORDS, CAN_MANAGE_LANDLORDS, CAN_VIEW_PROPERTIES, CAN_MANAGE_PROPERTIES } from "./constants/roles";
 
 export function App() {
   return (
@@ -56,6 +59,16 @@ export function App() {
                   <Route element={<ProtectedRoute allowedRoles={CAN_MANAGE_LANDLORDS} />}>
                     <Route path="/landlords/new" element={<LandlordFormPage />} />
                     <Route path="/landlords/:id/edit" element={<LandlordFormPage />} />
+                  </Route>
+                </Route>
+
+                <Route element={<ProtectedRoute allowedRoles={CAN_VIEW_PROPERTIES} />}>
+                  <Route path="/properties" element={<PropertiesListPage />} />
+                  <Route path="/properties/:id" element={<PropertyDetailPage />} />
+
+                  <Route element={<ProtectedRoute allowedRoles={CAN_MANAGE_PROPERTIES} />}>
+                    <Route path="/properties/new" element={<PropertyFormPage />} />
+                    <Route path="/properties/:id/edit" element={<PropertyFormPage />} />
                   </Route>
                 </Route>
               </Route>
