@@ -1,10 +1,10 @@
 /**
- * Navigation shell. "Dashboard" and "Landlords" are real, clickable
- * routes; every other module is listed (so the overall app shape is
- * visible) but rendered disabled, since none of them have a frontend
- * yet. As each module gets its own frontend built, flip its entry here
- * from `path: null` to a real path (see documentation/progress-log.md
- * for build order).
+ * Navigation shell. Dashboard, Landlords, Properties, Tenants, and
+ * Employees are real, clickable routes; the remaining modules are listed
+ * (so the overall app shape is visible) but rendered disabled, since they
+ * don't have a frontend yet. As each module gets its own frontend built,
+ * flip its entry here from `path: null` to a real path (see
+ * documentation/progress-log.md for build order).
  */
 import { NavLink } from "react-router-dom";
 
@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { label: "Tenancies", path: null },
   { label: "Rent Payments", path: null },
   { label: "Maintenance", path: null },
-  { label: "Employees", path: null },
+  { label: "Employees", path: "/employees" },
 ];
 
 export function Sidebar() {

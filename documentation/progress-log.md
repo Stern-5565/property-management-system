@@ -5,7 +5,7 @@ Read this first if you're picking this project back up in a new conversation
 and decisions that aren't obvious just from reading the code, so you don't
 have to re-derive them.
 
-Last updated: 2026-08-06, after completing the Tenants frontend module (Prompt 20).
+Last updated: 2026-08-06, after completing the Employees frontend module (Prompt 20 - the last of the repeatable CRUD group).
 
 ## Where things stand
 
@@ -28,19 +28,18 @@ Last updated: 2026-08-06, after completing the Tenants frontend module (Prompt 2
 
 **332/332 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 8 maintenance notes, 5 employees/users).
 
-**Frontend: React foundation + reusable component library + Landlords + Properties + Tenants modules done** (`frontend/`, plain React + JavaScript + CSS, Vite, react-router-dom, axios - per the scope doc's explicit "use plain React and readable CSS", no TypeScript/Tailwind/component library). Routing, API client with silent-refresh-on-401, auth context, protected routes, sidebar+header layout, all 15 of Prompt 19's reusable components, and now three full CRUD modules built on top of them. See "Frontend foundation", "Reusable component library", "Landlords frontend module (Prompt 20)", "Properties frontend module (Prompt 20)", and "Tenants frontend module (Prompt 20)" below.
+**Frontend: React foundation + reusable component library + Landlords + Properties + Tenants + Employees modules done** (`frontend/`, plain React + JavaScript + CSS, Vite, react-router-dom, axios - per the scope doc's explicit "use plain React and readable CSS", no TypeScript/Tailwind/component library). Routing, API client with silent-refresh-on-401, auth context, protected routes, sidebar+header layout, all 15 of Prompt 19's reusable components, and now all four repeatable-CRUD modules built on top of them - Prompt 20 is fully done. See "Frontend foundation", "Reusable component library", "Landlords frontend module (Prompt 20)", "Properties frontend module (Prompt 20)", "Tenants frontend module (Prompt 20)", and "Employees frontend module (Prompt 20)" below.
 
-**Not started yet:** the remaining frontend business modules (Tenancies, Payments, Maintenance, Employees) and the real Dashboard page; deployment.
+**Not started yet:** the remaining frontend business modules (Tenancies, Payments, Maintenance) and the real Dashboard page; deployment.
 
 ## Next steps, in order
 
 Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbered prompts):
 
-1. **Prompt 20 again, for Employees** (the doc groups Landlords/Properties/Tenants/Employees under one repeatable prompt - three down, one to go). Follow the exact file/route/permission shape `pages/landlords/` established (see below) - it's meant to be copied, not redesigned each time. Employees is narrower than the other three (`CAN_MANAGE_EMPLOYEES` is Administrator-only - see the backend section on Employees' permission shape above), so its `+ New`/Edit/Deactivate buttons should gate on that tighter role list, not the `CAN_MANAGE_X` shape the other three modules share.
-2. **Prompt 21: Tenancy frontend** - more involved (property/tenant selectors, activate/end/cancel actions, an ending-soon page) - its own prompt, not the generic CRUD one.
-3. **Prompt 22: Payments frontend**, then **Prompt 23: Maintenance frontend** (see the doc for each's specific requirements).
-4. **Then the Dashboard frontend** (KPI cards, charts, report filters, CSV export) — replaces the placeholder `HomePage.jsx`, and is the first real consumer of `KpiCard`.
-5. **Then testing/deployment** (later milestones).
+1. **Prompt 21: Tenancy frontend** - more involved (property/tenant selectors, activate/end/cancel actions, an ending-soon page) - its own prompt, not the generic CRUD one.
+2. **Prompt 22: Payments frontend**, then **Prompt 23: Maintenance frontend** (see the doc for each's specific requirements).
+3. **Then the Dashboard frontend** (KPI cards, charts, report filters, CSV export) — replaces the placeholder `HomePage.jsx`, and is the first real consumer of `KpiCard`.
+4. **Then testing/deployment** (later milestones).
 
 ## Landlords frontend module (Prompt 20) - the template every other CRUD module should copy
 
@@ -73,6 +72,16 @@ Followed the Landlords file/route shape exactly (`services/propertyService.js`, 
 Third CRUD module (`services/tenantService.js`, `pages/tenants/{List,Detail,Form}Page.jsx`, nested `ProtectedRoute`s with `CAN_VIEW_TENANTS`/`CAN_MANAGE_TENANTS`). Tenant's `PATCH /api/tenants/{id}/status` accepts `IsActive` either direction (like Landlords, unlike Properties - see `backend/app/services/tenant_service.py`'s `set_active_status`), so `TenantDetailPage` copies `LandlordDetailPage`'s activate/deactivate-with-`ConfirmationDialog` pattern exactly, not Property's split status/active pattern - **check which shape a module's backend actually supports before copying either template**, don't assume every module works like the most recently built one.
 
 Nothing new introduced at the cross-module level this time (`Toast`, `roles.js`/`permissions.js`, `ConfirmationDialog`'s `confirmDisabled` all reused as-is) - this module was the first "pure copy" of the established pattern, which is the point of having established it. The one field-level addition: `TenantFormPage`'s client-side validation mirrors `TenantWriteBase.date_of_birth_not_in_future` (a `DateField` with `max={TODAY}` plus an explicit check in `validate()`, same reasoning as `LandlordFormPage`'s company-or-full-name check - simple static backend rules get a client-side mirror, anything needing a DB lookup doesn't).
+
+## Employees frontend module (Prompt 20) - fourth and last of the repeatable CRUD group
+
+Same file/route shape as the other three (`services/employeeService.js`, `pages/employees/{List,Detail,Form}Page.jsx`), but the first frontend module with a **narrower permission pair than every module before it**: `CAN_VIEW_EMPLOYEES = [Administrator, PropertyManager]` (no ReadOnly, no MaintenanceEmployee) and `CAN_MANAGE_EMPLOYEES = [Administrator]` only (no PropertyManager) - mirrors `backend/app/core/roles.py` exactly, added to `constants/roles.js` alongside the existing `CAN_VIEW_X`/`CAN_MANAGE_X` pairs. Verified live for all three tiers: Administrator (Sarah Mitchell) gets full create/edit/deactivate/reactivate; PropertyManager (Priya Patel) sees the list and detail pages with no `+ New`/Edit/Deactivate buttons rendered, and is bounced to `/unauthorized` if she navigates to `/employees/new` directly (route-level `ProtectedRoute` backstop, not just the button-level check); ReadOnly (Emma Wilson) is bounced to `/unauthorized` from `/employees` itself - she has no view access at all, unlike every earlier module where ReadOnly could at least view.
+
+`EmployeeDetailPage` copies `TenantDetailPage`'s activate/deactivate-with-`ConfirmationDialog` pattern (Employee's `PATCH /api/employees/{id}/status` also accepts `IsActive` either direction - see `employeeService.js`), not Property's split status/active pattern. The confirmation dialog's message for deactivating spells out both backend consequences up front rather than letting the user hit a 409 blind: it's blocked if the employee still has open maintenance assignments (`EMPLOYEE_HAS_OPEN_MAINTENANCE_ASSIGNMENTS`), and - the one genuinely new piece of information a user needs here that no other module's dialog has to convey - deactivating also disables their linked login account one-way (`employee_service.py`'s `_deactivate_linked_user`; reactivating the Employee does NOT restore it).
+
+`EmployeeFormPage` differs from every other module's form in one way worth remembering: **`Email` and `HireDate` are both required fields** in `EmployeeWriteBase` (no optional-email escape hatch like Landlord/Tenant have), so client-side `validate()` rejects blank Email/HireDate up front instead of only checking shape - don't copy `LandlordFormPage`'s "empty email is fine" assumption here. `HireDate` gets the same `DateField max={TODAY}` + explicit check pattern as `TenantFormPage`'s `DateOfBirth`, mirroring `EmployeeWriteBase.hire_date_not_in_future`.
+
+Nothing new introduced at the cross-module level (`Toast`, `ConfirmationDialog`'s `confirmDisabled`, the toast-across-navigation pattern all reused as-is) - only `roles.js` gained the new, narrower `CAN_VIEW_EMPLOYEES`/`CAN_MANAGE_EMPLOYEES` pair, and `Sidebar.jsx`'s `Employees` entry flipped from `path: null` to `/employees` (now every Prompt-20 module's nav link is live; only Tenancies/Rent Payments/Maintenance remain disabled). Manually created and fully deactivated/reactivated a throwaway employee via the browser to verify the round trip, then deleted it directly via `sqlcmd` (`DELETE FROM Employees WHERE EmployeeId = <id>`, `SET QUOTED_IDENTIFIER ON` first) to restore the seeded count of 5 - the UI itself never hard-deletes (`deactivateEmployee` is a soft-delete via `DELETE /api/employees/{id}`, which is `EmployeeService.deactivate_employee` under the hood, not a real SQL delete).
 
 ## Frontend foundation: how to run it, and the decisions worth knowing before touching it again
 

@@ -38,6 +38,9 @@ import { PropertyFormPage } from "./pages/properties/PropertyFormPage";
 import { TenantsListPage } from "./pages/tenants/TenantsListPage";
 import { TenantDetailPage } from "./pages/tenants/TenantDetailPage";
 import { TenantFormPage } from "./pages/tenants/TenantFormPage";
+import { EmployeesListPage } from "./pages/employees/EmployeesListPage";
+import { EmployeeDetailPage } from "./pages/employees/EmployeeDetailPage";
+import { EmployeeFormPage } from "./pages/employees/EmployeeFormPage";
 import {
   CAN_VIEW_LANDLORDS,
   CAN_MANAGE_LANDLORDS,
@@ -45,6 +48,8 @@ import {
   CAN_MANAGE_PROPERTIES,
   CAN_VIEW_TENANTS,
   CAN_MANAGE_TENANTS,
+  CAN_VIEW_EMPLOYEES,
+  CAN_MANAGE_EMPLOYEES,
 } from "./constants/roles";
 
 export function App() {
@@ -89,6 +94,16 @@ export function App() {
                   <Route element={<ProtectedRoute allowedRoles={CAN_MANAGE_TENANTS} />}>
                     <Route path="/tenants/new" element={<TenantFormPage />} />
                     <Route path="/tenants/:id/edit" element={<TenantFormPage />} />
+                  </Route>
+                </Route>
+
+                <Route element={<ProtectedRoute allowedRoles={CAN_VIEW_EMPLOYEES} />}>
+                  <Route path="/employees" element={<EmployeesListPage />} />
+                  <Route path="/employees/:id" element={<EmployeeDetailPage />} />
+
+                  <Route element={<ProtectedRoute allowedRoles={CAN_MANAGE_EMPLOYEES} />}>
+                    <Route path="/employees/new" element={<EmployeeFormPage />} />
+                    <Route path="/employees/:id/edit" element={<EmployeeFormPage />} />
                   </Route>
                 </Route>
               </Route>
