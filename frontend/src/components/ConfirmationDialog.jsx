@@ -20,6 +20,7 @@ export function ConfirmationDialog({
   onConfirm,
   onCancel,
   danger = false,
+  confirmDisabled = false,
 }) {
   const cancelButtonRef = useRef(null);
 
@@ -64,6 +65,7 @@ export function ConfirmationDialog({
             type="button"
             className={danger ? "button button--danger" : "button"}
             onClick={onConfirm}
+            disabled={confirmDisabled}
           >
             {confirmLabel}
           </button>

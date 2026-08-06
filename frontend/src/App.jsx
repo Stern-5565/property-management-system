@@ -9,10 +9,15 @@
  *   active (see layouts/MainLayout.jsx).
  * - "*" catches any URL that doesn't match one of the routes above.
  *
- * Only "/" (HomePage) exists as a real business page today - see
- * documentation/progress-log.md for why (Prompt 18 is foundation only).
- * "/dev/components" is a dev-only reference for the Prompt 19 component
- * library, not a real app page - see ComponentShowcasePage.jsx.
+ * "/" (HomePage) and "/dev/components" (the dev-only Prompt 19 component
+ * reference - see ComponentShowcasePage.jsx) need only a login. The
+ * Landlords routes are the first to use ProtectedRoute's `allowedRoles`
+ * for real: nested ProtectedRoutes narrow access twice - once so only
+ * CAN_VIEW_LANDLORDS roles can see the module at all, again so only
+ * CAN_MANAGE_LANDLORDS roles reach the create/edit forms (matching the
+ * backend's own CAN_VIEW_LANDLORDS/CAN_MANAGE_LANDLORDS split in
+ * app/core/roles.py). Every future module follows this same nesting
+ * shape.
  */
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -24,6 +29,10 @@ import { HomePage } from "./pages/HomePage";
 import { ComponentShowcasePage } from "./pages/ComponentShowcasePage";
 import { UnauthorizedPage } from "./pages/UnauthorizedPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { LandlordsListPage } from "./pages/landlords/LandlordsListPage";
+import { LandlordDetailPage } from "./pages/landlords/LandlordDetailPage";
+import { LandlordFormPage } from "./pages/landlords/LandlordFormPage";
+import { CAN_VIEW_LANDLORDS, CAN_MANAGE_LANDLORDS } from "./constants/roles";
 
 export function App() {
   return (
@@ -39,6 +48,16 @@ export function App() {
                 <Route path="/" element={<HomePage />} />
                 {/* Dev-only component library reference - see ComponentShowcasePage.jsx. Deliberately not in the sidebar. */}
                 <Route path="/dev/components" element={<ComponentShowcasePage />} />
+
+                <Route element={<ProtectedRoute allowedRoles={CAN_VIEW_LANDLORDS} />}>
+                  <Route path="/landlords" element={<LandlordsListPage />} />
+                  <Route path="/landlords/:id" element={<LandlordDetailPage />} />
+
+                  <Route element={<ProtectedRoute allowedRoles={CAN_MANAGE_LANDLORDS} />}>
+                    <Route path="/landlords/new" element={<LandlordFormPage />} />
+                    <Route path="/landlords/:id/edit" element={<LandlordFormPage />} />
+                  </Route>
+                </Route>
               </Route>
             </Route>
 

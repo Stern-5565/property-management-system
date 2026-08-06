@@ -1,15 +1,16 @@
 /**
- * Navigation shell. Only "Dashboard" is a real, clickable route right now
- * - every other module is listed (so the overall app shape is visible)
- * but rendered disabled, since Prompt 18 explicitly says not to build the
- * business pages yet. As each module gets its own frontend built, flip
- * its entry here from `path: null` to a real path.
+ * Navigation shell. "Dashboard" and "Landlords" are real, clickable
+ * routes; every other module is listed (so the overall app shape is
+ * visible) but rendered disabled, since none of them have a frontend
+ * yet. As each module gets its own frontend built, flip its entry here
+ * from `path: null` to a real path (see documentation/progress-log.md
+ * for build order).
  */
 import { NavLink } from "react-router-dom";
 
 const NAV_ITEMS = [
   { label: "Dashboard", path: "/" },
-  { label: "Landlords", path: null },
+  { label: "Landlords", path: "/landlords" },
   { label: "Properties", path: null },
   { label: "Tenants", path: null },
   { label: "Tenancies", path: null },
@@ -28,7 +29,7 @@ export function Sidebar() {
             <li key={item.label}>
               <NavLink
                 to={item.path}
-                end
+                end={item.path === "/"}
                 className={({ isActive }) => "sidebar__link" + (isActive ? " sidebar__link--active" : "")}
               >
                 {item.label}

@@ -5,7 +5,7 @@ Read this first if you're picking this project back up in a new conversation
 and decisions that aren't obvious just from reading the code, so you don't
 have to re-derive them.
 
-Last updated: 2026-08-04, after completing the Reusable Frontend Components (Prompt 19).
+Last updated: 2026-08-06, after completing the Landlords frontend module (Prompt 20).
 
 ## Where things stand
 
@@ -28,16 +28,37 @@ Last updated: 2026-08-04, after completing the Reusable Frontend Components (Pro
 
 **332/332 backend tests passing.** Demo data counts verified intact after every module (5 landlords, 10 properties, 12 tenants, 12 tenancies, 30 rent payments, 20 maintenance requests, 8 maintenance notes, 5 employees/users).
 
-**Frontend: React foundation + reusable component library done** (`frontend/`, plain React + JavaScript + CSS, Vite, react-router-dom, axios - per the scope doc's explicit "use plain React and readable CSS", no TypeScript/Tailwind/component library). Routing, API client with silent-refresh-on-401, auth context, protected routes, login/home/unauthorized/404 pages, sidebar+header layout, and all 15 of Prompt 19's reusable components. See "Frontend foundation" and "Reusable component library" below for the full breakdown. No business-module pages yet, deliberately (see those sections).
+**Frontend: React foundation + reusable component library + Landlords module done** (`frontend/`, plain React + JavaScript + CSS, Vite, react-router-dom, axios - per the scope doc's explicit "use plain React and readable CSS", no TypeScript/Tailwind/component library). Routing, API client with silent-refresh-on-401, auth context, protected routes, sidebar+header layout, all 15 of Prompt 19's reusable components, and now the first full CRUD module (list/detail/create/edit + activate/deactivate) built on top of them. See "Frontend foundation", "Reusable component library", and "Landlords frontend module (Prompt 20)" below.
 
-**Not started yet:** frontend business modules (Landlords, Properties, Tenants, Tenancies, Payments, Maintenance, Employees, Dashboard); deployment.
+**Not started yet:** the remaining frontend business modules (Properties, Tenants, Tenancies, Payments, Maintenance, Employees) and the real Dashboard page; deployment.
 
 ## Next steps, in order
 
 Follow `documentation/project-scope.md`'s own sequence (section 57 / the numbered prompts):
 
-1. **Prompt 20+: one frontend module at a time** — Landlords, Properties, Tenants, Tenancies, Payments, Maintenance, Employees, each following the same repo-established "API service → page → manual test" flow (see `frontend/src/services/authService.js` as the template for a module's API service file, and `frontend/src/components/` for the DataTable/Pagination/FormField/etc. every list/form page should build on rather than reinventing).
-2. **Then the Dashboard frontend** (KPI cards, charts, report filters, CSV export) — replaces the placeholder `HomePage.jsx`, and is the first real consumer of `KpiCard`.
+1. **Prompt 20 again, for Properties, Tenants, then Employees** (the doc explicitly groups these four - Landlords, Properties, Tenants, Employees - under one repeatable prompt). Follow the exact file/route/permission shape `pages/landlords/` established (see below) - it's meant to be copied, not redesigned each time.
+2. **Prompt 21: Tenancy frontend** - more involved (property/tenant selectors, activate/end/cancel actions, an ending-soon page) - its own prompt, not the generic CRUD one.
+3. **Prompt 22: Payments frontend**, then **Prompt 23: Maintenance frontend** (see the doc for each's specific requirements).
+4. **Then the Dashboard frontend** (KPI cards, charts, report filters, CSV export) — replaces the placeholder `HomePage.jsx`, and is the first real consumer of `KpiCard`.
+5. **Then testing/deployment** (later milestones).
+
+## Landlords frontend module (Prompt 20) - the template every other CRUD module should copy
+
+**File/route shape**, now established as the convention:
+- `frontend/src/services/<module>Service.js` - one file per module wrapping its REST endpoints (see `landlordService.js`).
+- `frontend/src/pages/<module>/` - a **subfolder** per module (not flat in `pages/` - that only held single-file pages like `LoginPage.jsx` before this). Three files: `<Module>sListPage.jsx`, `<Module>DetailPage.jsx`, `<Module>FormPage.jsx` (one form component shared by create AND edit - branches on whether `useParams()` has an `:id`).
+- Routes nest two `ProtectedRoute`s inside `MainLayout` (see `App.jsx`): the outer narrows to `CAN_VIEW_<MODULE>`, an inner one (wrapping only `/new` and `/:id/edit`) narrows further to `CAN_MANAGE_<MODULE>` - matching the backend's own view/manage role split exactly (`frontend/src/constants/roles.js` mirrors `backend/app/core/roles.py`, built up module by module as each frontend module is built, not all at once).
+- Every module-specific role check (`hasAnyRole(user, CAN_MANAGE_X)`) drives which action buttons even render, not just route access - "role-based action buttons" is a real per-button check, route gating is just the defense-in-depth backstop for someone navigating directly to a URL they can't act on.
+
+**New cross-module pieces added alongside Landlords** (not Landlords-specific, reused by every module after this):
+- `frontend/src/components/Toast.jsx` - the "success notification" Prompt 20 asks for, that Prompt 19's component list didn't yet include. A page owns its own toast state (`useState`), no global store.
+- The toast-across-navigation pattern: `navigate(path, { state: { toast: "..." } })` after a create/edit/action, and the receiving page reads `location.state?.toast` as its initial toast state, then immediately fires a `navigate(location.pathname, { replace: true, state: {} })` in a mount-only effect to scrub it from history (so an F5 refresh doesn't re-show it forever - `location.state` persists across reloads via the History API). See `LandlordsListPage.jsx`/`LandlordDetailPage.jsx` for the exact shape to copy.
+- `frontend/src/constants/roles.js` + `frontend/src/utilities/permissions.js` (`hasAnyRole(user, allowedRoles)`) - add each module's `CAN_VIEW_X`/`CAN_MANAGE_X` pair to `roles.js` as that module's frontend gets built.
+- `ConfirmationDialog` gained a `confirmDisabled` prop (prevents double-submit while an action's promise is in flight) - a Prompt 19 component extended in place, not duplicated.
+
+**A real bug caught and fixed during manual verification** (worth remembering for every future module's detail-page action pattern): when `LandlordDetailPage`'s deactivate action failed server-side (`LANDLORD_HAS_ACTIVE_PROPERTIES`), the original code only closed `ConfirmationDialog` on the *success* path, leaving it open on error. The `ErrorMessage` banner rendered underneath the dialog's `position: fixed` backdrop (z-index), so the error was in the DOM and even in the accessibility tree, but **invisible** - the kind of bug a text-only check misses and only shows up checking real rendered visibility (`element.offsetParent !== null`) or a screenshot. Fixed by closing the dialog in a `.finally()` so it closes on both outcomes, error banner rendering visibly on the underlying page. Apply this same "close the dialog before/regardless of showing the error" shape to every other module's action-with-a-dialog flow.
+
+**Client-side vs. server-side validation split** (`LandlordFormPage.jsx`): client-side checks only the cheap, obviously-wrong cases - required fields and the company-or-full-name rule (mirroring `LandlordWriteBase.require_company_or_full_name` in the backend schema) - so the user gets instant feedback without a round trip. Duplicate-email detection is NOT duplicated client-side; that error only ever comes from the server's response message. This is the balance to strike for every future module's form: mirror simple, static backend rules client-side; never re-implement anything that requires a database lookup.
 3. **Then testing/deployment** (later milestones).
 
 ## Frontend foundation: how to run it, and the decisions worth knowing before touching it again
