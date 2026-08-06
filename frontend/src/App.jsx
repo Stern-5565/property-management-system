@@ -45,6 +45,11 @@ import { TenanciesListPage } from "./pages/tenancies/TenanciesListPage";
 import { TenancyDetailPage } from "./pages/tenancies/TenancyDetailPage";
 import { TenancyFormPage } from "./pages/tenancies/TenancyFormPage";
 import { TenancyEndingSoonPage } from "./pages/tenancies/TenancyEndingSoonPage";
+import { RentPaymentsListPage } from "./pages/rent-payments/RentPaymentsListPage";
+import { RentPaymentDetailPage } from "./pages/rent-payments/RentPaymentDetailPage";
+import { RentPaymentFormPage } from "./pages/rent-payments/RentPaymentFormPage";
+import { RentPaymentOverduePage } from "./pages/rent-payments/RentPaymentOverduePage";
+import { RentPaymentDueThisMonthPage } from "./pages/rent-payments/RentPaymentDueThisMonthPage";
 import {
   CAN_VIEW_LANDLORDS,
   CAN_MANAGE_LANDLORDS,
@@ -56,6 +61,8 @@ import {
   CAN_MANAGE_EMPLOYEES,
   CAN_VIEW_TENANCIES,
   CAN_MANAGE_TENANCIES,
+  CAN_VIEW_RENT_PAYMENTS,
+  CAN_MANAGE_RENT_PAYMENTS,
 } from "./constants/roles";
 
 export function App() {
@@ -121,6 +128,18 @@ export function App() {
                   <Route element={<ProtectedRoute allowedRoles={CAN_MANAGE_TENANCIES} />}>
                     <Route path="/tenancies/new" element={<TenancyFormPage />} />
                     <Route path="/tenancies/:id/edit" element={<TenancyFormPage />} />
+                  </Route>
+                </Route>
+
+                <Route element={<ProtectedRoute allowedRoles={CAN_VIEW_RENT_PAYMENTS} />}>
+                  <Route path="/rent-payments" element={<RentPaymentsListPage />} />
+                  <Route path="/rent-payments/overdue" element={<RentPaymentOverduePage />} />
+                  <Route path="/rent-payments/due-this-month" element={<RentPaymentDueThisMonthPage />} />
+                  <Route path="/rent-payments/:id" element={<RentPaymentDetailPage />} />
+
+                  <Route element={<ProtectedRoute allowedRoles={CAN_MANAGE_RENT_PAYMENTS} />}>
+                    <Route path="/rent-payments/new" element={<RentPaymentFormPage />} />
+                    <Route path="/rent-payments/:id/edit" element={<RentPaymentFormPage />} />
                   </Route>
                 </Route>
               </Route>

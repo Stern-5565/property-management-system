@@ -154,12 +154,16 @@ export function TenancyDetailPage() {
       <PageHeader
         title={`${tenancy.PropertyReference} — ${tenancy.TenantName}`}
         actions={
-          canManage &&
-          canEdit && (
-            <Link to={`/tenancies/${id}/edit`} className="button button--secondary">
-              Edit
+          <>
+            <Link to={`/rent-payments?tenancyId=${id}`} className="button button--secondary">
+              Payment history
             </Link>
-          )
+            {canManage && canEdit && (
+              <Link to={`/tenancies/${id}/edit`} className="button button--secondary">
+                Edit
+              </Link>
+            )}
+          </>
         }
       />
 
