@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { label: "Rent Payments", path: "/rent-payments" },
   { label: "Maintenance", path: "/maintenance" },
   { label: "Employees", path: "/employees" },
+  { label: "Reports", path: "/reports" },
 ];
 
 export function Sidebar() {

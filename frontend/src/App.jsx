@@ -59,6 +59,8 @@ import { MaintenanceRequestsListPage } from "./pages/maintenance/MaintenanceRequ
 import { MaintenanceRequestDetailPage } from "./pages/maintenance/MaintenanceRequestDetailPage";
 import { MaintenanceRequestFormPage } from "./pages/maintenance/MaintenanceRequestFormPage";
 import { MaintenanceWorkloadPage } from "./pages/maintenance/MaintenanceWorkloadPage";
+import { ReportsIndexPage } from "./pages/reports/ReportsIndexPage";
+import { ReportViewPage } from "./pages/reports/ReportViewPage";
 import {
   CAN_VIEW_LANDLORDS,
   CAN_MANAGE_LANDLORDS,
@@ -76,6 +78,7 @@ import {
   CAN_MANAGE_MAINTENANCE,
   CAN_VIEW_MAINTENANCE,
   CAN_VIEW_DASHBOARD,
+  CAN_VIEW_REPORTS,
 } from "./constants/roles";
 
 export function App() {
@@ -171,6 +174,11 @@ export function App() {
                     <Route path="/maintenance/new" element={<MaintenanceRequestFormPage />} />
                     <Route path="/maintenance/:id/edit" element={<MaintenanceRequestFormPage />} />
                   </Route>
+                </Route>
+
+                <Route element={<ProtectedRoute allowedRoles={CAN_VIEW_REPORTS} />}>
+                  <Route path="/reports" element={<ReportsIndexPage />} />
+                  <Route path="/reports/:reportKey" element={<ReportViewPage />} />
                 </Route>
               </Route>
             </Route>

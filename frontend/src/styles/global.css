@@ -494,6 +494,12 @@ h1 {
   background: var(--color-danger-bg);
 }
 
+.data-table__totals-row td {
+  font-weight: 600;
+  background: var(--color-bg);
+  border-top: 2px solid var(--color-border);
+}
+
 .data-table__status {
   padding: 2rem 0;
   display: flex;
@@ -876,4 +882,73 @@ h1 {
   display: flex;
   gap: 0.75rem;
   margin-top: 0.5rem;
+}
+
+/* --- Reports (Prompt 25) --- */
+
+.report-index__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 480px;
+}
+
+.report-index__link {
+  display: block;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  color: var(--color-text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.report-index__link:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.report-page__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* --- Print-friendly layout (Prompt 25's "print-friendly layout"
+   requirement, applied app-wide rather than a report-only stylesheet -
+   nobody wants a sidebar, a header, filter controls, or action buttons
+   like Edit/Print/Export on a printed page anywhere in the app). Any
+   element only meaningful on-screen (e.g. a "← Back to X" link) opts out
+   with .no-print individually. --- */
+
+@media print {
+  .sidebar,
+  .header,
+  .report-page__filters,
+  .page-header__actions,
+  .no-print {
+    display: none !important;
+  }
+
+  .app-shell {
+    display: block;
+  }
+
+  .app-shell__content {
+    padding: 0;
+    overflow: visible;
+  }
+
+  .data-table {
+    border: none;
+  }
 }

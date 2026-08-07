@@ -67,3 +67,14 @@ export const CAN_ACCESS_MAINTENANCE = [ADMINISTRATOR, PROPERTY_MANAGER, READ_ONL
 // MaintenanceEmployee to /maintenance instead - the one role that would
 // otherwise land on /unauthorized immediately after signing in.
 export const CAN_VIEW_DASHBOARD = [ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY];
+
+// Reports: same Administrator/PropertyManager/ReadOnly shape as
+// Dashboard, applied uniformly to all 10 reports rather than splitting
+// "financial" from "operational" ones - see
+// backend/app/core/roles.py's CAN_VIEW_REPORTS comment for the full
+// reasoning (PropertyManager already has full RentPayments access, so a
+// stricter "operational only" export restriction wouldn't actually be
+// safer, just inconsistent). Export uses this same tuple - a CSV of a
+// report is the same data as viewing it on screen, not a separate
+// access level.
+export const CAN_VIEW_REPORTS = [ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY];

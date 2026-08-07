@@ -16,6 +16,15 @@
  * highlighting - see MaintenanceRequestsListPage) - lets a row carry an
  * extra class (e.g. a background tint) without DataTable needing to know
  * why.
+ *
+ * `totals` is optional (added for the Reports module - Prompt 25's
+ * "totals where relevant" requirement) - a single object shaped like a
+ * row (only the columns where a total makes sense need a key), rendered
+ * as a `<tfoot>` row through the exact same `column.render`/`row[key]`
+ * logic as every body row, so a currency column's total gets the same
+ * £-prefix formatting as its body cells for free. The first column
+ * always shows the word "Total" instead, regardless of whether `totals`
+ * has a value for that column's key.
  */
 import { LoadingSpinner } from "./LoadingSpinner";
 import { ErrorMessage } from "./ErrorMessage";
@@ -30,6 +39,7 @@ export function DataTable({
   error = null,
   onRetry,
   emptyMessage = "No records found.",
+  totals,
 }) {
   if (loading) {
     return (
@@ -71,6 +81,23 @@ export function DataTable({
           </tr>
         ))}
       </tbody>
+      {totals && (
+        <tfoot>
+          <tr className="data-table__totals-row">
+            {columns.map((column, index) => (
+              <td key={column.key}>
+                {index === 0
+                  ? "Total"
+                  : column.key in totals
+                    ? column.render
+                      ? column.render(totals)
+                      : totals[column.key]
+                    : ""}
+              </td>
+            ))}
+          </tr>
+        </tfoot>
+      )}
     </table>
   );
 }
