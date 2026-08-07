@@ -76,3 +76,25 @@ CAN_MANAGE_EMPLOYEES = (ADMINISTRATOR,)
 # figures (rent collected, outstanding rent) alongside operational ones,
 # and MaintenanceEmployee is explicitly barred from "financial reports".
 CAN_VIEW_DASHBOARD = (ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY)
+
+# Reports: same Administrator/PropertyManager/ReadOnly shape as
+# Dashboard, applied uniformly to all 10 MVP reports rather than
+# splitting "financial" from "operational" ones. The scope doc's wording
+# is genuinely ambiguous here - Administrator "view[s] all reports" and
+# "export[s] data" while PropertyManager only "view[s] reports" and
+# "export[s] operational data" - but PropertyManager already has full
+# read/write access to RentPayments (CAN_MANAGE_RENT_PAYMENTS) and every
+# other financial record in the system, so reading a financial *report*
+# they can already see the underlying rows for would be an inconsistent,
+# not-actually-safer restriction. Reading "operational data" as a
+# stricter subset isn't supported by anything else in the role model, so
+# every report shares this one gate; export uses the same tuple as view
+# (a CSV of a report is the same data, not a separate access level -
+# matches RentPayments' own CSV export, which needed no permission beyond
+# CAN_VIEW_RENT_PAYMENTS). MaintenanceEmployee is excluded, same
+# "financial reports" reasoning as CAN_VIEW_DASHBOARD - several of the 10
+# reports carry rent/cost figures and there's no clean way to split
+# MaintenanceEmployee into "sees only the non-financial reports" without
+# inventing a second reports-specific role split the scope doc never
+# describes.
+CAN_VIEW_REPORTS = (ADMINISTRATOR, PROPERTY_MANAGER, READ_ONLY)
